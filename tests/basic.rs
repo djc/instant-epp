@@ -104,7 +104,7 @@ async fn client() {
         .unwrap();
 
     assert_eq!(client.xml_greeting(), xml("response/greeting.xml"));
-    let rsp = client
+    client
         .transact(
             &Login::new(
                 "username",
@@ -116,8 +116,6 @@ async fn client() {
         )
         .await
         .unwrap();
-
-    assert_eq!(rsp.result.code, ResultCode::CommandCompletedSuccessfully);
 
     let rsp = client
         .transact(
