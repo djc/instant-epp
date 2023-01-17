@@ -4,6 +4,7 @@ use std::str;
 use std::time::Duration;
 
 use async_trait::async_trait;
+use epp_client::connect::connect_with_connector;
 use regex::Regex;
 use tokio::time::timeout;
 use tokio_test::io::Builder;
@@ -11,7 +12,6 @@ use tokio_test::io::Builder;
 use epp_client::domain::{DomainCheck, DomainContact, DomainCreate, Period};
 use epp_client::login::Login;
 use epp_client::response::ResultCode;
-use epp_client::EppClient;
 
 const CLTRID: &str = "cltrid:1626454866";
 
@@ -99,7 +99,7 @@ async fn client() {
         }
     }
 
-    let mut client = EppClient::new(FakeConnector, "test".into(), Duration::from_secs(5))
+    let mut client = connect_with_connector(FakeConnector, "test".into(), Duration::from_secs(5))
         .await
         .unwrap();
 
@@ -173,7 +173,7 @@ async fn dropped() {
         }
     }
 
-    let mut client = EppClient::new(FakeConnector, "test".into(), Duration::from_secs(5))
+    let mut client = connect_with_connector(FakeConnector, "test".into(), Duration::from_secs(5))
         .await
         .unwrap();
 

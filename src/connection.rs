@@ -4,10 +4,10 @@ use std::future::Future;
 use std::time::Duration;
 use std::{io, str, u32};
 
-use async_trait::async_trait;
-use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tracing::{debug, info};
 
+use crate::connect::Connector;
 use crate::error::Error;
 
 /// EPP Connection struct with some metadata for the connection
@@ -138,11 +138,4 @@ pub(crate) async fn timeout<T, E: Into<Error>>(
         Ok(Err(e)) => Err(e.into()),
         Err(_) => Err(Error::Timeout),
     }
-}
-
-#[async_trait]
-pub trait Connector {
-    type Connection: AsyncRead + AsyncWrite + Unpin;
-
-    async fn connect(&self, timeout: Duration) -> Result<Self::Connection, Error>;
 }

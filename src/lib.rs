@@ -94,6 +94,7 @@
 
 pub mod client;
 pub mod common;
+pub mod connect;
 pub mod connection;
 pub mod contact;
 pub mod domain;
