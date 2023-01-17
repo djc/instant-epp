@@ -12,6 +12,8 @@ use tracing::{debug, error, info, trace, warn};
 
 use crate::connect::Connector;
 use crate::error::Error;
+use crate::hello::HelloDocument;
+use crate::xml;
 
 /// EPP Connection
 ///
@@ -21,12 +23,27 @@ use crate::error::Error;
 /// [`EppConnection`] provides a [`EppConnection::run`](EppConnection::run) method, which only resolves when the connection is closed,
 /// either because a fatal error has occurred, or because its associated [`EppClient`](super::EppClient) has been dropped
 /// and all outstanding work has been completed.
+///
+/// # Keepalive (Idle Timeout)
+///
+/// EppConnection supports a keepalive mechanism.
+/// When `idle_timeout` is set, every time the timeout reaches zero while waiting for a new request from the
+/// [`EppClient`](super::EppClient), a `<hello>` request is sent to the epp server.
+/// This is in line with VeriSign's guidelines. VeriSign uses an idle timeout of 10 minutes and an absolute timeout of 24h.
+/// Choosing an `idle_timeout` of 8 minutes should be sufficient to not run into VeriSign's idle timeout.
+/// Other registry operators might need other values.
+///
+/// # Reconnect (Absolute Timeout)
+///
+/// Reconnecting, to gracefully allow a [`EppConnection`] to be "active", is currently not implemented. But a reconnect
+/// command is present to initiate the reconnect from the outside
 pub struct EppConnection<C: Connector> {
     registry: Cow<'static, str>,
     connector: C,
     stream: C::Connection,
     greeting: String,
     timeout: Duration,
+    idle_timeout: Option<Duration>,
     /// A receiver for receiving requests from [`EppClients`](super::client::EppClient) for the underlying connection.
     receiver: mpsc::UnboundedReceiver<Request>,
     state: ConnectionState,
@@ -38,6 +55,7 @@ impl<C: Connector> EppConnection<C> {
         registry: Cow<'static, str>,
         receiver: mpsc::UnboundedReceiver<Request>,
         request_timeout: Duration,
+        idle_timeout: Option<Duration>,
     ) -> Result<Self, Error> {
         let mut this = Self {
             registry,
@@ -46,6 +64,7 @@ impl<C: Connector> EppConnection<C> {
             receiver,
             greeting: String::new(),
             timeout: request_timeout,
+            idle_timeout,
             state: Default::default(),
         };
 
@@ -176,6 +195,35 @@ impl<C: Connector> EppConnection<C> {
         }
     }
 
+    async fn request_or_keepalive(&mut self) -> Result<Option<Request>, Error> {
+        loop {
+            let Some(idle_timeout) = self.idle_timeout else {
+                // We do not have any keep alive set, just forward to waiting for a request.
+                return Ok(self.receiver.recv().await);
+            };
+            trace!(registry = %self.registry, "Waiting for {idle_timeout:?} for new request until keepalive");
+            match tokio::time::timeout(idle_timeout, self.receiver.recv()).await {
+                Ok(request) => return Ok(request),
+                Err(_) => {
+                    self.keepalive().await?;
+                    // We sent the keepalive. Go back to wait for requests.
+                    continue;
+                }
+            }
+        }
+    }
+
+    async fn keepalive(&mut self) -> Result<(), Error> {
+        trace!(registry = %self.registry, "Sending keepalive hello");
+        // Send hello
+        let request = xml::serialize(&HelloDocument::default())?;
+        self.write_epp_request(&request).await?;
+
+        // Await new greeting
+        self.greeting = self.read_epp_response().await?;
+        Ok(())
+    }
+
     /// This is the main method of the I/O tasks
     ///
     /// It will try to get a request, write it to the wire and waits for the response.
@@ -191,8 +239,11 @@ impl<C: Connector> EppConnection<C> {
                 return None;
             }
 
-            // Wait for new request
-            let request = self.receiver.recv().await;
+            // Wait for new request or send a keepalive
+            let request = match self.request_or_keepalive().await {
+                Ok(request) => request,
+                Err(err) => return Some(Err(err)),
+            };
             let Some(request) = request  else {
                 // The client got dropped. We can close the connection.
                 match self.wait_for_shutdown().await {

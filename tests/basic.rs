@@ -101,7 +101,7 @@ async fn client() {
     }
 
     let (mut client, mut connection) =
-        connect_with_connector(FakeConnector, "test".into(), Duration::from_secs(5))
+        connect_with_connector(FakeConnector, "test".into(), Duration::from_secs(5), None)
             .await
             .unwrap();
 
@@ -186,7 +186,7 @@ async fn dropped() {
     }
 
     let (mut client, mut connection) =
-        connect_with_connector(FakeConnector, "test".into(), Duration::from_secs(5))
+        connect_with_connector(FakeConnector, "test".into(), Duration::from_secs(5), None)
             .await
             .unwrap();
     tokio::spawn(async move {
@@ -279,7 +279,7 @@ async fn drop_client() {
     }
 
     let (client, mut connection) =
-        connect_with_connector(FakeConnector, "test".into(), Duration::from_secs(5))
+        connect_with_connector(FakeConnector, "test".into(), Duration::from_secs(5), None)
             .await
             .unwrap();
 
@@ -295,4 +295,94 @@ async fn drop_client() {
 
     drop(client);
     assert!(handle.await.is_ok());
+}
+
+#[tokio::test]
+async fn keepalive() {
+    let _guard = log_to_stdout();
+
+    struct FakeConnector;
+
+    #[async_trait]
+    impl epp_client::client::Connector for FakeConnector {
+        type Connection = tokio_test::io::Mock;
+
+        async fn connect(&self, _: Duration) -> Result<Self::Connection, epp_client::Error> {
+            Ok(build_stream(&[
+                "response/greeting.xml",
+                "request/login.xml",
+                "response/login.xml",
+                // The keepalive should kick in.
+                // We set the keepalive to 100ms and wait 250ms which should yield two hello requests
+                "request/hello.xml",
+                "response/greeting.xml",
+                "request/hello.xml",
+                "response/greeting.xml",
+                "request/domain/create.xml",
+                "response/domain/create.xml",
+            ])
+            .build())
+        }
+    }
+
+    let (mut client, mut connection) = connect_with_connector(
+        FakeConnector,
+        "test".into(),
+        Duration::from_secs(5),
+        Some(Duration::from_millis(100)),
+    )
+    .await
+    .unwrap();
+    tokio::spawn(async move {
+        connection.run().await.unwrap();
+        trace!("connection future resolved successfully")
+    });
+
+    trace!("Trying to get greeting");
+    assert_eq!(
+        client.xml_greeting().await.unwrap(),
+        xml("response/greeting.xml")
+    );
+
+    let rsp = client
+        .transact(
+            &Login::new(
+                "username",
+                "password",
+                Some("new-password"),
+                Some(&["http://schema.ispapi.net/epp/xml/keyvalue-1.0"]),
+            ),
+            CLTRID,
+        )
+        .await
+        .unwrap();
+    assert_eq!(rsp.result.code, ResultCode::CommandCompletedSuccessfully);
+    trace!("Waiting");
+    tokio::time::sleep(Duration::from_millis(250)).await;
+
+    let contacts = &[
+        DomainContact {
+            contact_type: "admin".into(),
+            id: "eppdev-contact-3".into(),
+        },
+        DomainContact {
+            contact_type: "tech".into(),
+            id: "eppdev-contact-3".into(),
+        },
+        DomainContact {
+            contact_type: "billing".into(),
+            id: "eppdev-contact-3".into(),
+        },
+    ];
+    let create = DomainCreate::new(
+        "eppdev-1.com",
+        Period::years(1).unwrap(),
+        None,
+        Some("eppdev-contact-3"),
+        "epP4uthd#v",
+        Some(contacts),
+    );
+    trace!("Trying to create domains");
+    let rsp = client.transact(&create, CLTRID).await.unwrap();
+    assert_eq!(rsp.result.code, ResultCode::CommandCompletedSuccessfully);
 }

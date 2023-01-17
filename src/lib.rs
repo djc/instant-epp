@@ -59,7 +59,7 @@
 //! use std::net::ToSocketAddrs;
 //! use std::time::Duration;
 //!
-//! use epp_client::connect::connect;
+//! use epp_client::connect::{connect, DEFAULT_IDLE_TIMEOUT};
 //! use epp_client::domain::DomainCheck;
 //! use epp_client::login::Login;
 //!
@@ -67,7 +67,7 @@
 //! async fn main() {
 //!     // Create an instance of EppClient
 //!     let timeout = Duration::from_secs(5);
-//!     let (mut client, mut connection) = match connect("registry_name".into(), ("example.com".into(), 7000), None, timeout).await {
+//!     let (mut client, mut connection) = match connect("registry_name".into(), ("example.com".into(), 7000), None, timeout, Some(DEFAULT_IDLE_TIMEOUT)).await {
 //!         Ok(c) => c,
 //!         Err(e) => panic!("Failed to create EppClient: {}",  e)
 //!     };

@@ -26,10 +26,12 @@ use crate::error::Error;
 
 /// Connect to the specified `server` and `hostname` over TLS
 ///
-/// The `registry` is used as a name in internal logging; `addr` provides the address to
-/// connect to, `hostname` is sent as the TLS server name indication and `identity` provides
-/// optional TLS client authentication (using) rustls as the TLS implementation.
-/// The `timeout` limits the time spent on any underlying network operations.
+/// The `registry` is used as a name in internal logging; `server` provides the hostname and port
+/// to connect to, and `identity` provides optional TLS client authentication (using) rustls as
+/// the TLS implementation.
+/// The `request_timeout` limits the time spent on any underlying network operation.
+/// The `idle_timeout` prevents the connection to be closed server-side due to being idle. (See
+/// [`EppConnection`] Keepalive)
 ///
 /// This returns two halves, a cloneable client and the underlying connection.
 ///
@@ -40,22 +42,25 @@ pub async fn connect(
     server: (Cow<'static, str>, u16),
     identity: Option<(Vec<Certificate>, PrivateKey)>,
     request_timeout: Duration,
+    idle_timeout: Option<Duration>,
 ) -> Result<(EppClient, EppConnection<RustlsConnector>), Error> {
     let connector = RustlsConnector::new(server, identity).await?;
 
     let (sender, receiver) = mpsc::unbounded_channel();
     let client = EppClient::new(sender, registry.clone());
-    let connection = EppConnection::new(connector, registry, receiver, request_timeout).await?;
+    let connection =
+        EppConnection::new(connector, registry, receiver, request_timeout, idle_timeout).await?;
 
     Ok((client, connection))
 }
 
 /// Connect to the specified `server` and `hostname` via the passed connector.
 ///
-/// The `registry` is used as a name in internal logging; `addr` provides the address to
-/// connect to, `hostname` is sent as the TLS server name indication and `identity` provides
-/// optional TLS client authentication (using) rustls as the TLS implementation.
-/// The `timeout` limits the time spent on any underlying network operations.
+/// The `registry` is used as a name in internal logging; `connector` provides a way to
+/// plug in various network connections.
+/// The `request_timeout` limits the time spent on any underlying network operations.
+/// The `idle_timeout` prevents the connection to be closed server-side due to being idle. (See
+/// [`EppConnection`] Keepalive)
 ///
 /// This returns two halves, a cloneable client and the underlying connection.
 ///
@@ -64,13 +69,15 @@ pub async fn connect_with_connector<C>(
     connector: C,
     registry: Cow<'static, str>,
     request_timeout: Duration,
+    idle_timeout: Option<Duration>,
 ) -> Result<(EppClient, EppConnection<C>), Error>
 where
     C: Connector,
 {
     let (sender, receiver) = mpsc::unbounded_channel();
     let client = EppClient::new(sender, registry.clone());
-    let connection = EppConnection::new(connector, registry, receiver, request_timeout).await?;
+    let connection =
+        EppConnection::new(connector, registry, receiver, request_timeout, idle_timeout).await?;
 
     Ok((client, connection))
 }
@@ -160,3 +167,7 @@ pub trait Connector {
 
     async fn connect(&self, timeout: Duration) -> Result<Self::Connection, Error>;
 }
+
+/// Per default try to send a keep alive every 8 minutes.
+/// Verisign has an idle timeout of 10 minutes.
+pub const DEFAULT_IDLE_TIMEOUT: Duration = Duration::from_secs(60 * 8);

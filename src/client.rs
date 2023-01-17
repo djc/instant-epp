@@ -37,7 +37,7 @@ use crate::xml;
 /// # async fn main() {
 /// // Create an instance of EppClient
 /// let timeout = Duration::from_secs(5);
-/// let (mut client, mut connection) = match connect("registry_name".into(), ("example.com".into(), 7000), None, timeout).await {
+/// let (mut client, mut connection) = match connect("registry_name".into(), ("example.com".into(), 7000), None, timeout, None).await {
 ///     Ok(client) => client,
 ///     Err(e) => panic!("Failed to create EppClient: {}",  e)
 /// };
