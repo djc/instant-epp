@@ -59,7 +59,7 @@
 //! use std::net::ToSocketAddrs;
 //! use std::time::Duration;
 //!
-//! use epp_client::EppClient;
+//! use epp_client::connect::connect;
 //! use epp_client::domain::DomainCheck;
 //! use epp_client::login::Login;
 //!
@@ -67,10 +67,14 @@
 //! async fn main() {
 //!     // Create an instance of EppClient
 //!     let timeout = Duration::from_secs(5);
-//!     let mut client = match EppClient::connect("registry_name".to_string(), ("example.com".to_owned(), 7000), None, timeout).await {
-//!         Ok(client) => client,
+//!     let (mut client, mut connection) = match connect("registry_name".into(), ("example.com".into(), 7000), None, timeout).await {
+//!         Ok(c) => c,
 //!         Err(e) => panic!("Failed to create EppClient: {}",  e)
 //!     };
+//!
+//!     tokio::spawn(async move {
+//!         connection.run().await.unwrap();
+//!     });
 //!
 //!     let login = Login::new("username", "password", None, None);
 //!     client.transact(&login, "transaction-id").await.unwrap();

@@ -1,37 +1,51 @@
 //! Manages registry connections and reading/writing to them
 
+use std::borrow::Cow;
+use std::convert::TryInto;
 use std::future::Future;
 use std::time::Duration;
 use std::{io, str, u32};
 
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
-use tracing::{debug, info};
+use tokio::sync::mpsc;
+use tracing::{debug, error, info, trace, warn};
 
 use crate::connect::Connector;
 use crate::error::Error;
 
-/// EPP Connection struct with some metadata for the connection
-pub(crate) struct EppConnection<C: Connector> {
-    pub registry: String,
+/// EPP Connection
+///
+/// This is the I/O half, returned when creating a new connection, that performs the actual I/O and thus
+/// should be spawned in it's own task.
+///
+/// [`EppConnection`] provides a [`EppConnection::run`](EppConnection::run) method, which only resolves when the connection is closed,
+/// either because a fatal error has occurred, or because its associated [`EppClient`](super::EppClient) has been dropped
+/// and all outstanding work has been completed.
+pub struct EppConnection<C: Connector> {
+    registry: Cow<'static, str>,
     connector: C,
     stream: C::Connection,
-    pub greeting: String,
+    greeting: String,
     timeout: Duration,
+    /// A receiver for receiving requests from [`EppClients`](super::client::EppClient) for the underlying connection.
+    receiver: mpsc::UnboundedReceiver<Request>,
     state: ConnectionState,
 }
 
 impl<C: Connector> EppConnection<C> {
     pub(crate) async fn new(
         connector: C,
-        registry: String,
-        timeout: Duration,
+        registry: Cow<'static, str>,
+        receiver: mpsc::UnboundedReceiver<Request>,
+        request_timeout: Duration,
     ) -> Result<Self, Error> {
         let mut this = Self {
             registry,
-            stream: connector.connect(timeout).await?,
+            stream: connector.connect(request_timeout).await?,
             connector,
+            receiver,
             greeting: String::new(),
-            timeout,
+            timeout: request_timeout,
             state: Default::default(),
         };
 
@@ -40,7 +54,39 @@ impl<C: Connector> EppConnection<C> {
         Ok(this)
     }
 
-    /// Constructs an EPP XML request in the required form and sends it to the server
+    /// Runs the connection
+    ///
+    /// This will loops and awaits new requests from the client half and sends the request to the epp server
+    /// awaiting a response.
+    ///
+    /// Spawn this in a task and await run to resolve.
+    /// This resolves when the connection to the epp server gets dropped.
+    ///
+    /// # Examples
+    /// ```[no_compile]
+    /// let mut connection = <obtained via connect::connect()>
+    /// tokio::spawn(async move {
+    ///     if let Err(err) = connection.run().await {
+    ///         error!("connection failed: {err}")
+    ///     }
+    /// });
+    pub async fn run(&mut self) -> Result<(), Error> {
+        while let Some(message) = self.message().await {
+            match message {
+                Ok(message) => info!("{message}"),
+                Err(err) => {
+                    error!("{err}");
+                    break;
+                }
+            }
+        }
+        trace!("stopping EppConnection task");
+        Ok(())
+    }
+
+    /// Sends the given content to the used [`Connector::Connection`]
+    ///
+    /// Returns an EOF error when writing to the stream results in 0 bytes written.
     async fn write_epp_request(&mut self, content: &str) -> Result<(), Error> {
         let len = content.len();
 
@@ -54,12 +100,26 @@ impl<C: Connector> EppConnection<C> {
         buf[4..].clone_from_slice(content.as_bytes());
 
         let wrote = timeout(self.timeout, self.stream.write(&buf)).await?;
-        debug!(registry = self.registry, "Wrote {} bytes", wrote);
+        // A write return value of 0 means the underlying socket
+        // does no longer accept any data.
+        if wrote == 0 {
+            warn!("Got EOF while writing");
+            self.state = ConnectionState::Closed;
+            return Err(io::Error::new(
+                io::ErrorKind::UnexpectedEof,
+                format!("{}: unexpected eof", self.registry),
+            )
+            .into());
+        }
+
+        debug!(registry = %self.registry, "Wrote {} bytes", wrote);
         Ok(())
     }
 
     /// Receives response from the socket and converts it into an EPP XML string
     async fn read_epp_response(&mut self) -> Result<String, Error> {
+        // We're looking for the frame header which tells us how long the response will be.
+        // The frame header is a 32-bit (4-byte) big-endian unsigned integer.
         let mut buf = [0u8; 4];
         timeout(self.timeout, self.stream.read_exact(&mut buf)).await?;
 
@@ -67,7 +127,7 @@ impl<C: Connector> EppConnection<C> {
 
         let message_size = buf_size - 4;
         debug!(
-            registry = self.registry,
+            registry = %self.registry,
             "Response buffer size: {}", message_size
         );
 
@@ -76,10 +136,10 @@ impl<C: Connector> EppConnection<C> {
 
         loop {
             let read = timeout(self.timeout, self.stream.read(&mut buf[read_size..])).await?;
-            debug!(registry = self.registry, "Read: {} bytes", read);
+            debug!(registry = %self.registry, "Read: {} bytes", read);
 
             read_size += read;
-            debug!(registry = self.registry, "Total read: {} bytes", read_size);
+            debug!(registry = %self.registry, "Total read: {} bytes", read_size);
 
             if read == 0 {
                 self.state = ConnectionState::Closed;
@@ -96,8 +156,8 @@ impl<C: Connector> EppConnection<C> {
         Ok(String::from_utf8(buf)?)
     }
 
-    pub(crate) async fn reconnect(&mut self) -> Result<(), Error> {
-        debug!(registry = self.registry, "reconnecting");
+    async fn reconnect(&mut self) -> Result<(), Error> {
+        debug!(registry = %self.registry, "reconnecting");
         self.state = ConnectionState::Opening;
         self.stream = self.connector.connect(self.timeout).await?;
         self.greeting = self.read_epp_response().await?;
@@ -105,30 +165,68 @@ impl<C: Connector> EppConnection<C> {
         Ok(())
     }
 
-    /// Sends an EPP XML request to the registry and return the response
-    /// receieved to the request
-    pub(crate) async fn transact(&mut self, content: &str) -> Result<String, Error> {
-        if self.state != ConnectionState::Open {
-            debug!(registry = self.registry, " connection not ready");
-            self.reconnect().await?;
+    async fn wait_for_shutdown(&mut self) -> Result<(), io::Error> {
+        self.state = ConnectionState::Closing;
+        match self.stream.shutdown().await {
+            Ok(_) => {
+                self.state = ConnectionState::Closed;
+                Ok(())
+            }
+            Err(err) => Err(err),
         }
-
-        debug!(registry = self.registry, " request: {}", content);
-        self.write_epp_request(content).await?;
-
-        let response = self.read_epp_response().await?;
-        debug!(registry = self.registry, " response: {}", response);
-
-        Ok(response)
     }
 
-    /// Closes the socket and shuts the connection
-    pub(crate) async fn shutdown(&mut self) -> Result<(), Error> {
-        info!(registry = self.registry, "Closing connection");
-        self.state = ConnectionState::Closing;
-        timeout(self.timeout, self.stream.shutdown()).await?;
-        self.state = ConnectionState::Closed;
-        Ok(())
+    /// This is the main method of the I/O tasks
+    ///
+    /// It will try to get a request, write it to the wire and waits for the response.
+    ///
+    /// Once this returns `None`, or `Ok(Err(_))`, the connection is expected to be closed.
+    async fn message(&mut self) -> Option<Result<Cow<'static, str>, Error>> {
+        // In theory this can be even speed up as the underlying stream is in our case bi-directional.
+        // But as the EPP RFC does not guarantee the order of responses we would need to
+        // match based on the transactions id. We can look into adding support for this in
+        // future.
+        loop {
+            if self.state == ConnectionState::Closed {
+                return None;
+            }
+
+            // Wait for new request
+            let request = self.receiver.recv().await;
+            let Some(request) = request  else {
+                // The client got dropped. We can close the connection.
+                match self.wait_for_shutdown().await {
+                    Ok(_) => return None,
+                    Err(err) => return Some(Err(err.into())),
+                }
+            };
+
+            let response = match request.request {
+                RequestMessage::Greeting => Ok(self.greeting.clone()),
+                RequestMessage::Request(request) => {
+                    if let Err(err) = self.write_epp_request(&request).await {
+                        return Some(Err(err));
+                    }
+                    timeout(self.timeout, self.read_epp_response()).await
+                }
+                RequestMessage::Reconnect => match self.reconnect().await {
+                    Ok(_) => Ok(self.greeting.clone()),
+                    Err(err) => {
+                        // In this case we are not sure if the connection is in tact. Best we error out.
+                        let _ = request.sender.send(Err(Error::Reconnect)).await;
+                        return Some(Err(err));
+                    }
+                },
+            };
+
+            // Awaiting `send` should not block this I/O tasks unless we try to write multiple responses to the same bounded channel.
+            // As this crate is structured to create a new bounded channel for each request, this ok here.
+            if request.sender.send(response).await.is_err() {
+                // If the receive half of the sender is dropped, (i.e. the `Client`s `Future` is canceled)
+                // we can just ignore the err here and return to let `run` print something for this task.
+                return Some(Ok("request was canceled. Client dropped.".into()));
+            }
+        }
     }
 }
 
@@ -150,4 +248,18 @@ enum ConnectionState {
     Open,
     Closing,
     Closed,
+}
+
+pub(crate) struct Request {
+    pub(crate) request: RequestMessage,
+    pub(crate) sender: mpsc::Sender<Result<String, Error>>,
+}
+
+pub(crate) enum RequestMessage {
+    /// Request the stored server greeting
+    Greeting,
+    /// Reconnect the underlying [`Connector::Connection`]
+    Reconnect,
+    /// Raw request to be sent to the connected EPP Server
+    Request(String),
 }

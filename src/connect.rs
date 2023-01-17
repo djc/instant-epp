@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -8,6 +9,7 @@ use tokio::io::AsyncWrite;
 #[cfg(feature = "tokio-rustls")]
 use tokio::net::lookup_host;
 use tokio::net::TcpStream;
+use tokio::sync::mpsc;
 #[cfg(feature = "tokio-rustls")]
 use tokio_rustls::client::TlsStream;
 #[cfg(feature = "tokio-rustls")]
@@ -19,6 +21,7 @@ use tracing::info;
 use crate::client::EppClient;
 use crate::common::{Certificate, PrivateKey};
 use crate::connection;
+use crate::connection::EppConnection;
 use crate::error::Error;
 
 /// Connect to the specified `server` and `hostname` over TLS
@@ -33,15 +36,18 @@ use crate::error::Error;
 /// Use connect_with_connector for passing a specific connector.
 #[cfg(feature = "tokio-rustls")]
 pub async fn connect(
-    registry: String,
-    server: (String, u16),
+    registry: Cow<'static, str>,
+    server: (Cow<'static, str>, u16),
     identity: Option<(Vec<Certificate>, PrivateKey)>,
-    timeout: Duration,
-) -> Result<EppClient<RustlsConnector>, Error> {
-    info!("Connecting to server: {:?}", server);
-
+    request_timeout: Duration,
+) -> Result<(EppClient, EppConnection<RustlsConnector>), Error> {
     let connector = RustlsConnector::new(server, identity).await?;
-    EppClient::new(connector, registry, timeout).await
+
+    let (sender, receiver) = mpsc::unbounded_channel();
+    let client = EppClient::new(sender, registry.clone());
+    let connection = EppConnection::new(connector, registry, receiver, request_timeout).await?;
+
+    Ok((client, connection))
 }
 
 /// Connect to the specified `server` and `hostname` via the passed connector.
@@ -56,25 +62,29 @@ pub async fn connect(
 /// Use connect_with_connector for passing a specific connector.
 pub async fn connect_with_connector<C>(
     connector: C,
-    registry: String,
-    timeout: Duration,
-) -> Result<EppClient<C>, Error>
+    registry: Cow<'static, str>,
+    request_timeout: Duration,
+) -> Result<(EppClient, EppConnection<C>), Error>
 where
     C: Connector,
 {
-    EppClient::new(connector, registry, timeout).await
+    let (sender, receiver) = mpsc::unbounded_channel();
+    let client = EppClient::new(sender, registry.clone());
+    let connection = EppConnection::new(connector, registry, receiver, request_timeout).await?;
+
+    Ok((client, connection))
 }
 
 #[cfg(feature = "tokio-rustls")]
 pub struct RustlsConnector {
     inner: TlsConnector,
     domain: ServerName,
-    server: (String, u16),
+    server: (Cow<'static, str>, u16),
 }
 
 impl RustlsConnector {
     pub async fn new(
-        server: (String, u16),
+        server: (Cow<'static, str>, u16),
         identity: Option<(Vec<Certificate>, PrivateKey)>,
     ) -> Result<Self, Error> {
         let mut roots = RootCertStore::empty();
@@ -103,7 +113,7 @@ impl RustlsConnector {
             None => builder.with_no_client_auth(),
         };
 
-        let domain = server.0.as_str().try_into().map_err(|_| {
+        let domain = server.0.as_ref().try_into().map_err(|_| {
             io::Error::new(
                 io::ErrorKind::InvalidInput,
                 format!("Invalid domain: {}", server.0),
@@ -125,7 +135,10 @@ impl Connector for RustlsConnector {
 
     async fn connect(&self, timeout: Duration) -> Result<Self::Connection, Error> {
         info!("Connecting to server: {}:{}", self.server.0, self.server.1);
-        let addr = match lookup_host(&self.server).await?.next() {
+        let addr = match lookup_host((self.server.0.as_ref(), self.server.1))
+            .await?
+            .next()
+        {
             Some(addr) => addr,
             None => {
                 return Err(Error::Io(io::Error::new(

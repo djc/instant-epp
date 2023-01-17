@@ -8,6 +8,7 @@ use epp_client::connect::connect_with_connector;
 use regex::Regex;
 use tokio::time::timeout;
 use tokio_test::io::Builder;
+use tracing::trace;
 
 use epp_client::domain::{DomainCheck, DomainContact, DomainCreate, Period};
 use epp_client::login::Login;
@@ -99,11 +100,19 @@ async fn client() {
         }
     }
 
-    let mut client = connect_with_connector(FakeConnector, "test".into(), Duration::from_secs(5))
-        .await
-        .unwrap();
+    let (mut client, mut connection) =
+        connect_with_connector(FakeConnector, "test".into(), Duration::from_secs(5))
+            .await
+            .unwrap();
 
-    assert_eq!(client.xml_greeting(), xml("response/greeting.xml"));
+    tokio::spawn(async move {
+        connection.run().await.unwrap();
+    });
+
+    assert_eq!(
+        client.xml_greeting().await.unwrap(),
+        xml("response/greeting.xml")
+    );
     let rsp = client
         .transact(
             &Login::new(
@@ -116,6 +125,7 @@ async fn client() {
         )
         .await
         .unwrap();
+    assert_eq!(rsp.result.code, ResultCode::CommandCompletedSuccessfully);
 
     assert_eq!(rsp.result.code, ResultCode::CommandCompletedSuccessfully);
 
@@ -175,11 +185,20 @@ async fn dropped() {
         }
     }
 
-    let mut client = connect_with_connector(FakeConnector, "test".into(), Duration::from_secs(5))
-        .await
-        .unwrap();
+    let (mut client, mut connection) =
+        connect_with_connector(FakeConnector, "test".into(), Duration::from_secs(5))
+            .await
+            .unwrap();
+    tokio::spawn(async move {
+        connection.run().await.unwrap();
+        trace!("connection future resolved successfully")
+    });
 
-    assert_eq!(client.xml_greeting(), xml("response/greeting.xml"));
+    trace!("Trying to get greeting");
+    assert_eq!(
+        client.xml_greeting().await.unwrap(),
+        xml("response/greeting.xml")
+    );
     let rsp = client
         .transact(
             &Login::new(
@@ -240,4 +259,40 @@ async fn dropped() {
 
     let rsp = client.transact(&create, CLTRID).await.unwrap();
     assert_eq!(rsp.result.code, ResultCode::CommandCompletedSuccessfully);
+
+    drop(client);
+}
+
+#[tokio::test]
+async fn drop_client() {
+    let _guard = log_to_stdout();
+
+    struct FakeConnector;
+
+    #[async_trait]
+    impl epp_client::client::Connector for FakeConnector {
+        type Connection = tokio_test::io::Mock;
+
+        async fn connect(&self, _: Duration) -> Result<Self::Connection, epp_client::Error> {
+            Ok(build_stream(&["response/greeting.xml"]).build())
+        }
+    }
+
+    let (client, mut connection) =
+        connect_with_connector(FakeConnector, "test".into(), Duration::from_secs(5))
+            .await
+            .unwrap();
+
+    let handle = tokio::spawn(async move {
+        connection.run().await.unwrap();
+        trace!("connection future resolved successfully")
+    });
+
+    assert_eq!(
+        client.xml_greeting().await.unwrap(),
+        xml("response/greeting.xml")
+    );
+
+    drop(client);
+    assert!(handle.await.is_ok());
 }
