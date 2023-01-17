@@ -71,9 +71,12 @@ impl<C: Connector> EppClient<C> {
     pub async fn hello(&mut self) -> Result<Greeting, Error> {
         let xml = xml::serialize(&HelloDocument::default())?;
 
-        debug!("{}: hello: {}", self.connection.registry, &xml);
+        debug!(registry = self.connection.registry, "hello: {}", &xml);
         let response = self.connection.transact(&xml).await?;
-        debug!("{}: greeting: {}", self.connection.registry, &response);
+        debug!(
+            registry = self.connection.registry,
+            "greeting: {}", &response
+        );
 
         Ok(xml::deserialize::<GreetingDocument>(&response)?.data)
     }
@@ -91,9 +94,12 @@ impl<C: Connector> EppClient<C> {
         let document = CommandDocument::new(data.command, data.extension, id);
         let xml = xml::serialize(&document)?;
 
-        debug!("{}: request: {}", self.connection.registry, &xml);
+        debug!(registry = self.connection.registry, "request: {}", &xml);
         let response = self.connection.transact(&xml).await?;
-        debug!("{}: response: {}", self.connection.registry, &response);
+        debug!(
+            registry = self.connection.registry,
+            "response: {}", &response
+        );
 
         let rsp = xml::deserialize::<ResponseDocument<Cmd::Response, Ext::Response>>(&response)?;
         if rsp.data.result.code.is_success() {
@@ -105,7 +111,7 @@ impl<C: Connector> EppClient<C> {
             tr_ids: rsp.data.tr_ids,
         }));
 
-        error!(%response, "Failed to deserialize response for transaction: {}", err);
+        error!(registry=self.connection.registry, %response, "Failed to deserialize response for transaction: {}", err);
         Err(err)
     }
 
