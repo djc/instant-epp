@@ -16,7 +16,9 @@ use crate::request::{Command, CommandDocument, Extension, Transaction};
 use crate::response::{Response, ResponseDocument, ResponseStatus};
 use crate::xml;
 
-/// An `EppClient` provides an interface to sending EPP requests to a registry
+/// EPP Client
+///
+/// Provides an interface to send EPP requests to a registry
 ///
 /// Once initialized, the [`EppClient`] instance is the API half that is returned when creating a new connection.
 /// It can serialize EPP requests to XML and send them to the registry and deserialize the XML responses from the
@@ -70,7 +72,6 @@ pub struct EppClient {
 }
 
 impl EppClient {
-    /// Create an `EppClient` from an already established connection
     pub(crate) fn new(sender: mpsc::UnboundedSender<Request>, registry: Cow<'static, str>) -> Self {
         Self {
             inner: Arc::new(InnerClient { sender, registry }),
@@ -91,6 +92,9 @@ impl EppClient {
         Ok(xml::deserialize::<GreetingDocument>(&response)?.data)
     }
 
+    /// Sends a EPP request and await its response
+    ///
+    /// The given transactions id is not checked internally when build in release mode.
     pub async fn transact<'c, 'e, Cmd, Ext>(
         &mut self,
         data: impl Into<RequestData<'c, 'e, Cmd, Ext>>,
