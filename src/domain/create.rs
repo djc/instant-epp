@@ -58,7 +58,7 @@ impl<'a> DomainCreate<'a> {
             domain: DomainCreateRequestData {
                 name,
                 period,
-                ns: ns.map(|ns| NameServers { ns: ns.to_vec() }),
+                ns: ns.map(|ns| NameServers { ns: ns.into() }),
                 registrant,
                 auth_info: DomainAuthInfo::new(auth_password),
                 contacts,

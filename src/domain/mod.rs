@@ -130,7 +130,7 @@ pub enum HostInfo<'a> {
 #[derive(Debug, FromXml, ToXml)]
 #[xml(rename = "ns", ns(XMLNS))]
 pub struct NameServers<'a> {
-    pub ns: Vec<HostInfo<'a>>,
+    pub ns: Cow<'a, [HostInfo<'a>]>,
 }
 
 /// The &lt;contact&gt; type on domain creation and update requests
