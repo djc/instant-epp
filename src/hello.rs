@@ -43,8 +43,6 @@ impl<'xml> FromXml<'xml> for ServiceMenu {
         field: &'static str,
         deserializer: &mut Deserializer<'cx, 'xml>,
     ) -> Result<(), instant_xml::Error> {
-        dbg!(&into);
-
         let mut value = None;
         FlattenedServiceMenu::deserialize(&mut value, field, deserializer)?;
         let flattened = match value {
