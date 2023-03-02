@@ -6,16 +6,16 @@ use crate::extensions::low_balance::LowBalance;
 use crate::host::info::InfoData;
 use crate::request::{Command, Transaction};
 
-impl Transaction<NoExtension> for MessagePoll {}
+impl Transaction<NoExtension> for Poll {}
 
-impl Command for MessagePoll {
-    type Response = MessagePollResponse;
+impl Command for Poll {
+    type Response = PollData;
     const COMMAND: &'static str = "poll";
 }
 
-impl Transaction<NoExtension> for MessageAck<'_> {}
+impl Transaction<NoExtension> for Ack<'_> {}
 
-impl Command for MessageAck<'_> {
+impl Command for Ack<'_> {
     type Response = String;
     const COMMAND: &'static str = "poll";
 }
@@ -24,9 +24,9 @@ impl Command for MessageAck<'_> {
 
 /// Type for EPP XML `<poll>` command with `op="req"`
 #[derive(Debug)]
-pub struct MessagePoll;
+pub struct Poll;
 
-impl ToXml for MessagePoll {
+impl ToXml for Poll {
     fn serialize<W: std::fmt::Write + ?Sized>(
         &self,
         _: Option<instant_xml::Id<'_>>,
@@ -40,12 +40,12 @@ impl ToXml for MessagePoll {
 
 /// Type for EPP XML `<poll>` command with `op="ack"`
 #[derive(Debug)]
-pub struct MessageAck<'a> {
+pub struct Ack<'a> {
     /// The ID of the message to be acknowledged
     pub message_id: &'a str,
 }
 
-impl ToXml for MessageAck<'_> {
+impl ToXml for Ack<'_> {
     fn serialize<W: std::fmt::Write + ?Sized>(
         &self,
         _: Option<instant_xml::Id<'_>>,
@@ -63,7 +63,7 @@ impl ToXml for MessageAck<'_> {
 /// Type that represents the `<trnData>` tag for message poll response
 #[derive(Debug, FromXml)]
 #[xml(forward)]
-pub enum MessagePollResponse {
+pub enum PollData {
     /// Data under the `<domain:trnData>` tag
     DomainTransfer(TransferData),
     /// Data under the `<host:infData>` tag
@@ -74,7 +74,7 @@ pub enum MessagePollResponse {
 
 #[cfg(test)]
 mod tests {
-    use super::{MessageAck, MessagePoll, MessagePollResponse};
+    use super::{Ack, Poll, PollData};
     use crate::host::Status;
     use crate::response::ResultCode;
     use crate::tests::{assert_serialized, response_from_file, CLTRID, SUCCESS_MSG, SVTRID};
@@ -84,7 +84,7 @@ mod tests {
 
     #[test]
     fn ack_command() {
-        let object = MessageAck {
+        let object = Ack {
             message_id: "12345",
         };
         assert_serialized("request/poll/ack.xml", &object);
@@ -92,7 +92,7 @@ mod tests {
 
     #[test]
     fn response() {
-        let object = response_from_file::<MessageAck>("response/poll/ack.xml");
+        let object = response_from_file::<Ack>("response/poll/ack.xml");
         let msg = object.message_queue().unwrap();
 
         assert_eq!(object.result.code, ResultCode::CommandCompletedSuccessfully);
@@ -104,13 +104,13 @@ mod tests {
 
     #[test]
     fn poll_command() {
-        let object = MessagePoll;
+        let object = Poll;
         assert_serialized("request/poll/poll.xml", &object);
     }
 
     #[test]
     fn domain_transfer_response() {
-        let object = response_from_file::<MessagePoll>("response/poll/poll_domain_transfer.xml");
+        let object = response_from_file::<Poll>("response/poll/poll_domain_transfer.xml");
         let result = object.res_data().unwrap();
         let msg = object.message_queue().unwrap();
 
@@ -130,7 +130,7 @@ mod tests {
         );
         assert_eq!(msg.message.as_ref().unwrap().text, "Transfer requested.");
 
-        if let MessagePollResponse::DomainTransfer(tr) = &result {
+        if let PollData::DomainTransfer(tr) = &result {
             assert_eq!(tr.name, "eppdev-transfer.com");
             assert_eq!(tr.transfer_status, "pending");
             assert_eq!(tr.requester_id, "eppdev");
@@ -157,7 +157,7 @@ mod tests {
 
     #[test]
     fn host_info_response() {
-        let object = response_from_file::<MessagePoll>("response/poll/poll_host_info.xml");
+        let object = response_from_file::<Poll>("response/poll/poll_host_info.xml");
         let result = object.res_data().unwrap();
         let msg = object.message_queue().unwrap();
 
@@ -177,7 +177,7 @@ mod tests {
         );
         assert_eq!(msg.message.as_ref().unwrap().text, "Unused objects policy");
 
-        if let MessagePollResponse::HostInfo(host) = &result {
+        if let PollData::HostInfo(host) = &result {
             assert_eq!(host.name, "ns.test.com");
 
             assert_eq!(host.roid, "1234");
@@ -207,7 +207,7 @@ mod tests {
 
     #[test]
     fn message_only_response() {
-        let object = response_from_file::<MessagePoll>("response/poll/poll_message_only.xml");
+        let object = response_from_file::<Poll>("response/poll/poll_message_only.xml");
         let msg = object.message_queue().unwrap();
         dbg!(&msg);
 
@@ -234,7 +234,7 @@ mod tests {
 
     #[test]
     fn empty_queue_response() {
-        let object = response_from_file::<MessagePoll>("response/poll/poll_empty_queue.xml");
+        let object = response_from_file::<Poll>("response/poll/poll_empty_queue.xml");
 
         assert_eq!(
             object.result.code,

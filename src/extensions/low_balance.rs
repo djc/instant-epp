@@ -34,17 +34,17 @@ const XMLNS: &str = "http://www.verisign.com/epp/lowbalance-poll-1.0";
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::poll::{MessagePoll, MessagePollResponse};
+    use crate::poll::{Poll, PollData};
     use crate::response::ResultCode;
     use crate::tests::{response_from_file, CLTRID, SVTRID};
 
     #[test]
     fn low_balance() {
-        let object = response_from_file::<MessagePoll>("response/poll/poll_low_balance.xml");
+        let object = response_from_file::<Poll>("response/poll/poll_low_balance.xml");
         dbg!(&object);
 
         let low_balance = match object.res_data() {
-            Some(MessagePollResponse::LowBalance(low_balance)) => low_balance,
+            Some(PollData::LowBalance(low_balance)) => low_balance,
             _ => panic!("Unexpected message data"),
         };
 
