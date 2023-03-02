@@ -70,11 +70,11 @@ impl std::ops::Deref for Country {
     }
 }
 
-/// The &lt;authInfo&gt; tag for domain and contact transactions
+/// The `<authInfo>` tag for domain and contact transactions
 #[derive(Debug, Clone, FromXml, ToXml)]
 #[xml(rename = "authInfo", ns(XMLNS))]
 pub struct ContactAuthInfo<'a> {
-    /// The &lt;pw&gt; tag under &lt;authInfo&gt;
+    /// The `<pw>` tag under `<authInfo>`
     #[xml(rename = "pw")]
     pub password: Cow<'a, str>,
 }
@@ -88,14 +88,14 @@ impl<'a> ContactAuthInfo<'a> {
     }
 }
 
-/// The data for &lt;voice&gt; types on domain transactions
+/// The data for `<voice>` types on domain transactions
 #[derive(Debug, Clone, FromXml, ToXml)]
 #[xml(rename = "voice", ns(XMLNS))]
 pub struct Voice<'a> {
-    /// The value of the 'x' attr on &lt;voice&gt; and &lt;fax&gt; tags
+    /// The value of the 'x' attr on `<voice>` and `<fax>` tags
     #[xml(rename = "x", attribute)]
     pub extension: Option<Cow<'a, str>>,
-    /// The inner text on the &lt;voice&gt; and &lt;fax&gt; tags
+    /// The inner text on the `<voice>` and `<fax>` tags
     #[xml(direct)]
     pub number: Cow<'a, str>,
 }
@@ -115,14 +115,14 @@ impl<'a> Voice<'a> {
     }
 }
 
-/// The data for &lt;voice&gt; and &lt;fax&gt; types on domain transactions
+/// The data for `<voice>` and `<fax>` types on domain transactions
 #[derive(Debug, Clone, FromXml, ToXml)]
 #[xml(rename = "fax", ns(XMLNS))]
 pub struct Fax<'a> {
-    /// The value of the 'x' attr on &lt;voice&gt; and &lt;fax&gt; tags
+    /// The value of the 'x' attr on `<voice>` and `<fax>` tags
     #[xml(rename = "x", attribute)]
     pub extension: Option<Cow<'a, str>>,
-    /// The inner text on the &lt;voice&gt; and &lt;fax&gt; tags
+    /// The inner text on the `<voice>` and `<fax>` tags
     #[xml(direct)]
     pub number: Cow<'a, str>,
 }
@@ -142,21 +142,21 @@ impl<'a> Fax<'a> {
     }
 }
 
-/// The &lt;addr&gt; type on contact transactions
+/// The `<addr>` type on contact transactions
 #[derive(Debug, Clone, FromXml, ToXml)]
 #[xml(rename = "addr", ns(XMLNS))]
 pub struct Address<'a> {
-    /// The &lt;street&gt; tags under &lt;addr&gt;
+    /// The `<street>` tags under `<addr>`
     pub street: Vec<Cow<'a, str>>,
-    /// The &lt;city&gt; tag under &lt;addr&gt;
+    /// The `<city>` tag under `<addr>`
     pub city: Cow<'a, str>,
-    /// The &lt;sp&gt; tag under &lt;addr&gt;
+    /// The `<sp>` tag under `<addr>`
     #[xml(rename = "sp")]
     pub province: Cow<'a, str>,
-    /// The &lt;pc&gt; tag under &lt;addr&gt;
+    /// The `<pc>` tag under `<addr>`
     #[xml(rename = "pc")]
     pub postal_code: Cow<'a, str>,
-    /// The &lt;cc&gt; tag under &lt;addr&gt;
+    /// The `<cc>` tag under `<addr>`
     #[xml(rename = "cc")]
     pub country: Country,
 }
@@ -182,19 +182,19 @@ impl<'a> Address<'a> {
     }
 }
 
-/// The &lt;postalInfo&gt; type on contact transactions
+/// The `<postalInfo>` type on contact transactions
 #[derive(Debug, Clone, FromXml, ToXml)]
 #[xml(rename = "postalInfo", ns(XMLNS))]
 pub struct PostalInfo<'a> {
-    /// The 'type' attr on &lt;postalInfo&gt;
+    /// The 'type' attr on `<postalInfo>`
     #[xml(rename = "type", attribute)]
     pub info_type: Cow<'a, str>,
-    /// The &lt;name&gt; tag under &lt;postalInfo&gt;
+    /// The `<name>` tag under `<postalInfo>`
     pub name: Cow<'a, str>,
-    /// The &lt;org&gt; tag under &lt;postalInfo&gt;
+    /// The `<org>` tag under `<postalInfo>`
     #[xml(rename = "org")]
     pub organization: Cow<'a, str>,
-    /// The &lt;addr&gt; tag under &lt;postalInfo&gt;
+    /// The `<addr>` tag under `<postalInfo>`
     pub address: Address<'a>,
 }
 
@@ -215,11 +215,11 @@ impl<'a> PostalInfo<'a> {
     }
 }
 
-/// The &lt;status&gt; type on contact transactions
+/// The `<status>` type on contact transactions
 #[derive(Debug, FromXml, ToXml)]
 #[xml(rename = "status", ns(XMLNS))]
 pub struct Status<'a> {
-    /// The status name, represented by the 's' attr on &lt;status&gt; tags
+    /// The status name, represented by the 's' attr on `<status>` tags
     #[xml(attribute, rename = "s")]
     pub status: Cow<'a, str>,
 }

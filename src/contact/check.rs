@@ -17,7 +17,7 @@ impl<'a> Command for ContactCheck<'a> {
 
 // Request
 
-/// Type that represents the &lt;check&gt; command for contact transactions
+/// Type that represents the `<check>` command for contact transactions
 #[derive(Debug, ToXml)]
 #[xml(rename = "check", ns(XMLNS))]
 struct ContactList<'a> {
@@ -56,11 +56,11 @@ pub struct Checked {
 #[derive(Debug, FromXml)]
 #[xml(rename = "cd", ns(XMLNS))]
 pub struct CheckedContact {
-    /// Data under the &lt;cd&gt; tag
+    /// Data under the `<cd>` tag
     pub inner: Checked,
 }
 
-/// Type that represents the &lt;chkData&gt; tag for host check response
+/// Type that represents the `<chkData>` tag for host check response
 #[derive(Debug, FromXml)]
 #[xml(rename = "chkData", ns(XMLNS))]
 pub struct CheckData {

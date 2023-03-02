@@ -92,7 +92,7 @@ pub struct UpdateWithNameStore<'a> {
     pub namestore: NameStore<'a>,
 }
 
-/// Type for EPP XML &lt;consolidate&gt; extension
+/// Type for EPP XML `<consolidate>` extension
 #[derive(Debug, ToXml)]
 #[xml(rename = "update", ns(XMLNS))]
 pub struct Update {

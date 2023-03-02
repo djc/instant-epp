@@ -26,7 +26,7 @@ impl<'a> HostCreate<'a> {
 
 // Request
 
-/// Type for data under the host &lt;create&gt; tag
+/// Type for data under the host `<create>` tag
 #[derive(Debug, ToXml)]
 #[xml(rename = "create", ns(XMLNS))]
 pub struct HostCreateRequest<'a> {
@@ -37,7 +37,7 @@ pub struct HostCreateRequest<'a> {
     pub addresses: Option<&'a [IpAddr]>,
 }
 
-/// Type for EPP XML &lt;create&gt; command for hosts
+/// Type for EPP XML `<create>` command for hosts
 #[derive(Debug, ToXml)]
 #[xml(rename = "create", ns(EPP_XMLNS))]
 pub struct HostCreate<'a> {
@@ -47,7 +47,7 @@ pub struct HostCreate<'a> {
 
 // Response
 
-/// Type that represents the &lt;creData&gt; tag for host create response
+/// Type that represents the `<creData>` tag for host create response
 #[derive(Debug, FromXml)]
 #[xml(rename = "creData", ns(XMLNS))]
 pub struct CreateData {

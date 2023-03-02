@@ -27,7 +27,7 @@ impl<'a> HostInfo<'a> {
 
 // Request
 
-/// Type for data under the host &lt;info&gt; tag
+/// Type for data under the host `<info>` tag
 #[derive(Debug, ToXml)]
 #[xml(rename = "info", ns(XMLNS))]
 pub struct HostInfoRequestData<'a> {
@@ -35,7 +35,7 @@ pub struct HostInfoRequestData<'a> {
     name: &'a str,
 }
 
-/// Type for EPP XML &lt;info&gt; command for hosts
+/// Type for EPP XML `<info>` command for hosts
 #[derive(Debug, ToXml)]
 #[xml(rename = "info", ns(EPP_XMLNS))]
 pub struct HostInfo<'a> {
@@ -46,7 +46,7 @@ pub struct HostInfo<'a> {
 
 // Response
 
-/// Type that represents the &lt;infData&gt; tag for host info response
+/// Type that represents the `<infData>` tag for host info response
 #[derive(Debug, FromXml)]
 #[xml(rename = "infData", ns(XMLNS))]
 pub struct InfoData {
@@ -104,11 +104,11 @@ fn deserialize_host_addrs(
 }
 
 /*
-/// Type that represents the &lt;resData&gt; tag for host info response
+/// Type that represents the `<resData>` tag for host info response
 #[derive(Debug, FromXml)]
 #[xml(rename = "infData", ns(XMLNS))]
 pub struct HostInfoResponse {
-    /// Data under the &lt;infData&gt; tag
+    /// Data under the `<infData>` tag
     #[xml(rename = "infData")]
     pub info_data: HostInfoResponseData,
 }

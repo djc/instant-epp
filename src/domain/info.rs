@@ -29,7 +29,7 @@ impl<'a> DomainInfo<'a> {
 
 // Request
 
-/// Type for data under the &lt;name&gt; element tag for the domain &lt;info&gt; tag
+/// Type for data under the `<name>` element tag for the domain `<info>` tag
 #[derive(Debug, ToXml)]
 #[xml(rename = "name", ns(XMLNS))]
 pub struct Domain<'a> {
@@ -41,7 +41,7 @@ pub struct Domain<'a> {
     name: &'a str,
 }
 
-/// Type for &lt;name&gt; element under the domain &lt;info&gt; tag
+/// Type for `<name>` element under the domain `<info>` tag
 #[derive(Debug, ToXml)]
 #[xml(rename = "info", ns(XMLNS))]
 pub struct DomainInfoRequestData<'a> {
@@ -52,10 +52,10 @@ pub struct DomainInfoRequestData<'a> {
 }
 
 #[derive(Debug, ToXml)]
-/// Type for EPP XML &lt;info&gt; command for domains
+/// Type for EPP XML `<info>` command for domains
 #[xml(rename = "info", ns(EPP_XMLNS))]
 pub struct DomainInfo<'a> {
-    /// The data under the &lt;info&gt; tag for domain info
+    /// The data under the `<info>` tag for domain info
     info: DomainInfoRequestData<'a>,
 }
 
@@ -65,14 +65,14 @@ pub struct DomainInfo<'a> {
 /// domain info response
 #[derive(Debug, FromXml)]
 pub struct DomainNsList {
-    /// List of &lt;hostObj&gt; ns elements
+    /// List of `<hostObj>` ns elements
     #[xml(rename = "hostObj")]
     pub host_obj: Option<Vec<String>>,
-    /// List of &lt;hostAttr&gt; ns elements
+    /// List of `<hostAttr>` ns elements
     pub host_attr: Option<Vec<HostAttr<'static>>>,
 }
 
-/// Type that represents the &lt;infData&gt; tag for domain info response
+/// Type that represents the `<infData>` tag for domain info response
 #[derive(Debug, FromXml)]
 #[xml(rename = "infData", ns(XMLNS))]
 pub struct InfoData {

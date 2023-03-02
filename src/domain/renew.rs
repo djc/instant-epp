@@ -28,7 +28,7 @@ impl<'a> DomainRenew<'a> {
 
 // Request
 
-/// Type for data under the domain &lt;renew&gt; tag
+/// Type for data under the domain `<renew>` tag
 #[derive(Debug, ToXml)]
 #[xml(rename = "renew", ns(XMLNS))]
 pub struct DomainRenewRequestData<'a> {
@@ -42,17 +42,17 @@ pub struct DomainRenewRequestData<'a> {
 }
 
 #[derive(Debug, ToXml)]
-/// Type for EPP XML &lt;renew&gt; command for domains
+/// Type for EPP XML `<renew>` command for domains
 #[xml(rename = "renew", ns(EPP_XMLNS))]
 pub struct DomainRenew<'a> {
-    /// The data under the &lt;renew&gt; tag for the domain renewal
+    /// The data under the `<renew>` tag for the domain renewal
     #[xml(rename = "renew")]
     domain: DomainRenewRequestData<'a>,
 }
 
 // Response
 
-/// Type that represents the &lt;renData&gt; tag for domain renew response
+/// Type that represents the `<renData>` tag for domain renew response
 #[derive(Debug, FromXml)]
 #[xml(rename = "renData", ns(XMLNS))]
 pub struct RenewData {

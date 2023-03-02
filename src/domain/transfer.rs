@@ -64,7 +64,7 @@ impl<'a> DomainTransfer<'a> {
 
 // Request
 
-/// Type for elements under the domain &lt;transfer&gt; tag
+/// Type for elements under the domain `<transfer>` tag
 #[derive(Debug, ToXml)]
 #[xml(rename = "transfer", ns(XMLNS))]
 pub struct DomainTransferReqData<'a> {
@@ -81,19 +81,19 @@ pub struct DomainTransferReqData<'a> {
 
 #[derive(Debug, ToXml)]
 #[xml(rename = "transfer", ns(EPP_XMLNS))]
-/// Type for EPP XML &lt;transfer&gt; command for domains
+/// Type for EPP XML `<transfer>` command for domains
 pub struct DomainTransfer<'a> {
     /// The transfer operation to perform indicated by the 'op' attr
     /// The values are one of transfer or query
     #[xml(rename = "op", attribute)]
     operation: &'a str,
-    /// The data under the &lt;transfer&gt; tag in the transfer request
+    /// The data under the `<transfer>` tag in the transfer request
     domain: DomainTransferReqData<'a>,
 }
 
 // Response
 
-/// Type that represents the &lt;trnData&gt; tag for domain transfer response
+/// Type that represents the `<trnData>` tag for domain transfer response
 #[derive(Debug, FromXml)]
 #[xml(rename = "trnData", ns(XMLNS))]
 pub struct TransferData {

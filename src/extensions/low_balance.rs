@@ -1,6 +1,6 @@
 //! Low Balance Mapping for the Extensible Provisioning Protocol (EPP)
 //!
-//! https://www.verisign.com/assets/epp-sdk/verisign_epp-extension_low-balance_v01.html
+//! <https://www.verisign.com/assets/epp-sdk/verisign_epp-extension_low-balance_v01.html>
 
 use instant_xml::FromXml;
 

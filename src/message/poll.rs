@@ -16,7 +16,7 @@ impl<'a> Command for MessagePoll<'a> {
 // Request
 
 #[derive(Debug, ToXml)]
-/// Type for EPP XML &lt;poll&gt; command for message poll
+/// Type for EPP XML `<poll>` command for message poll
 #[xml(rename = "poll", ns(EPP_XMLNS))]
 pub struct MessagePoll<'a> {
     /// The type of operation to perform
@@ -33,15 +33,15 @@ impl Default for MessagePoll<'static> {
 
 // Response
 
-/// Type that represents the &lt;trnData&gt; tag for message poll response
+/// Type that represents the `<trnData>` tag for message poll response
 #[derive(Debug, FromXml)]
 #[xml(forward)]
 pub enum MessagePollResponse {
-    /// Data under the &lt;domain:trnData&gt; tag
+    /// Data under the `<domain:trnData>` tag
     DomainTransfer(TransferData),
-    /// Data under the &lt;host:infData&gt; tag
+    /// Data under the `<host:infData>` tag
     HostInfo(InfoData),
-    /// Data under the &lt;lowbalance&gt; tag
+    /// Data under the `<lowbalance>` tag
     LowBalance(LowBalance),
 }
 

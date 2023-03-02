@@ -47,7 +47,7 @@ pub struct Update<T> {
     pub data: T,
 }
 
-/// Type corresponding to the &lt;report&gt; section in the EPP rgp restore extension
+/// Type corresponding to the `<report>` section in the EPP rgp restore extension
 #[derive(Debug, ToXml)]
 #[xml(rename = "report", ns(XMLNS))]
 pub struct RgpRestoreReportSectionData<'a> {
@@ -75,13 +75,13 @@ pub struct RgpRestoreReportSectionData<'a> {
 }
 
 #[derive(Debug, ToXml)]
-/// Type for EPP XML &lt;check&gt; command for domains
+/// Type for EPP XML `<check>` command for domains
 #[xml(rename = "restore", ns(XMLNS))]
 pub struct RgpRestoreReport<'a> {
-    /// The value of the op attribute for the &lt;restore&gt; tag
+    /// The value of the op attribute for the `<restore>` tag
     #[xml(attribute)]
     op: &'a str,
-    /// Data for the &lt;report&gt; tag
+    /// Data for the `<report>` tag
     #[xml(rename = "rgp:report")]
     report: RgpRestoreReportSectionData<'a>,
 }

@@ -27,23 +27,23 @@ impl<'a> DomainUpdate<'a> {
         }
     }
 
-    /// Sets the data for the &lt;chg&gt; tag
+    /// Sets the data for the `<chg>` tag
     pub fn info(&mut self, info: DomainChangeInfo<'a>) {
         self.domain.change_info = Some(info);
     }
 
-    /// Sets the data for the &lt;add&gt; tag
+    /// Sets the data for the `<add>` tag
     pub fn add(&mut self, add: DomainAdd<'a>) {
         self.domain.add = Some(add);
     }
 
-    /// Sets the data for the &lt;rem&gt; tag
+    /// Sets the data for the `<rem>` tag
     pub fn remove(&mut self, remove: DomainRemove<'a>) {
         self.domain.remove = Some(remove);
     }
 }
 
-/// Type for elements under the &lt;chg&gt; tag for domain update
+/// Type for elements under the `<chg>` tag for domain update
 #[derive(Debug, ToXml)]
 #[xml(rename = "chg", ns(XMLNS))]
 pub struct DomainChangeInfo<'a> {
@@ -53,7 +53,7 @@ pub struct DomainChangeInfo<'a> {
     pub auth_info: Option<DomainAuthInfo<'a>>,
 }
 
-/// Type for elements under the &lt;add&gt; and &lt;rem&gt; tags for domain update
+/// Type for elements under the `<add>` and `<rem>` tags for domain update
 #[derive(Debug, ToXml)]
 #[xml(rename = "add", ns(XMLNS))]
 pub struct DomainAdd<'a> {
@@ -66,7 +66,7 @@ pub struct DomainAdd<'a> {
     pub statuses: Option<&'a [Status<'a>]>,
 }
 
-/// Type for elements under the &lt;add&gt; and &lt;rem&gt; tags for domain update
+/// Type for elements under the `<add>` and `<rem>` tags for domain update
 #[derive(Debug, ToXml)]
 #[xml(rename = "rem", ns(XMLNS))]
 pub struct DomainRemove<'a> {
@@ -79,7 +79,7 @@ pub struct DomainRemove<'a> {
     pub statuses: Option<&'a [Status<'a>]>,
 }
 
-/// Type for elements under the &lt;update&gt; tag for domain update
+/// Type for elements under the `<update>` tag for domain update
 #[derive(Debug, ToXml)]
 #[xml(rename = "update", ns(XMLNS))]
 pub struct DomainUpdateRequestData<'a> {
@@ -91,12 +91,12 @@ pub struct DomainUpdateRequestData<'a> {
     /// `DomainAddRemove` Object containing the list of elements to be removed
     /// from the domain
     pub remove: Option<DomainRemove<'a>>,
-    /// The data under the &lt;chg&gt; tag for domain update
+    /// The data under the `<chg>` tag for domain update
     #[xml(rename = "domain:chg")]
     pub change_info: Option<DomainChangeInfo<'a>>,
 }
 
-/// Type for EPP XML &lt;update&gt; command for domains
+/// Type for EPP XML `<update>` command for domains
 #[derive(Debug, ToXml)]
 #[xml(rename = "update", ns(EPP_XMLNS))]
 pub struct DomainUpdate<'a> {

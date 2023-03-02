@@ -25,7 +25,7 @@ impl<'a> ContactUpdate<'a> {
         }
     }
 
-    /// Sets the data for the &lt;chg&gt; tag for the contact update request
+    /// Sets the data for the `<chg>` tag for the contact update request
     pub fn set_info(
         &mut self,
         email: &'a str,
@@ -42,25 +42,25 @@ impl<'a> ContactUpdate<'a> {
         });
     }
 
-    /// Sets the data for the &lt;fax&gt; tag under &lt;chg&gt; for the contact update request
+    /// Sets the data for the `<fax>` tag under `<chg>` for the contact update request
     pub fn set_fax(&mut self, fax: Fax<'a>) {
         if let Some(info) = &mut self.contact.change_info {
             info.fax = Some(fax)
         }
     }
 
-    /// Sets the data for the &lt;add&gt; tag for the contact update request
+    /// Sets the data for the `<add>` tag for the contact update request
     pub fn add(&mut self, statuses: &'a [Status]) {
         self.contact.add_statuses = Some(AddStatuses { statuses });
     }
 
-    /// Sets the data for the &lt;rem&gt; tag for the contact update request
+    /// Sets the data for the `<rem>` tag for the contact update request
     pub fn remove(&mut self, statuses: &'a [Status]) {
         self.contact.remove_statuses = Some(RemoveStatuses { statuses });
     }
 }
 
-/// Type for elements under the &lt;chg&gt; tag for contact update request
+/// Type for elements under the `<chg>` tag for contact update request
 #[derive(Debug, ToXml)]
 #[xml(rename = "chg", ns(XMLNS))]
 pub struct ContactChangeInfo<'a> {
@@ -71,7 +71,7 @@ pub struct ContactChangeInfo<'a> {
     auth_info: Option<ContactAuthInfo<'a>>,
 }
 
-/// Type for list of elements of the &lt;status&gt; tag for contact update request
+/// Type for list of elements of the `<status>` tag for contact update request
 #[derive(Debug, ToXml)]
 pub struct StatusList<'a> {
     status: &'a [Status<'a>],
@@ -89,7 +89,7 @@ struct RemoveStatuses<'a> {
     statuses: &'a [Status<'a>],
 }
 
-/// Type for elements under the contact &lt;update&gt; tag
+/// Type for elements under the contact `<update>` tag
 #[derive(Debug, ToXml)]
 #[xml(rename = "update", ns(XMLNS))]
 pub struct ContactUpdateRequest<'a> {
@@ -100,11 +100,11 @@ pub struct ContactUpdateRequest<'a> {
     change_info: Option<ContactChangeInfo<'a>>,
 }
 
-/// Type for EPP XML &lt;update&gt; command for contacts
+/// Type for EPP XML `<update>` command for contacts
 #[derive(Debug, ToXml)]
 #[xml(rename = "update", ns(EPP_XMLNS))]
 pub struct ContactUpdate<'a> {
-    /// The data under the &lt;update&gt; tag for the contact update
+    /// The data under the `<update>` tag for the contact update
     contact: ContactUpdateRequest<'a>,
 }
 

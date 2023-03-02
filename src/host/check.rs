@@ -17,7 +17,7 @@ impl<'a> Command for HostCheck<'a> {
 
 // Request
 
-/// Type for data under the host &lt;check&gt; tag
+/// Type for data under the host `<check>` tag
 #[derive(Debug, ToXml)]
 #[xml(rename = "check", ns(XMLNS))]
 struct HostCheckData<'a> {
@@ -57,12 +57,12 @@ pub struct Checked {
 #[derive(Debug, FromXml)]
 #[xml(rename = "cd", ns(XMLNS))]
 pub struct CheckedHost {
-    /// Data under the &lt;cd&gt; tag
+    /// Data under the `<cd>` tag
     #[xml(rename = "cd")]
     pub inner: Checked,
 }
 
-/// Type that represents the &lt;chkData&gt; tag for host check response
+/// Type that represents the `<chkData>` tag for host check response
 #[derive(Debug, FromXml)]
 #[xml(rename = "chkData", ns(XMLNS))]
 pub struct CheckData {

@@ -55,12 +55,12 @@ pub struct Checked {
 #[derive(Debug, FromXml)]
 #[xml(rename = "cd", ns(XMLNS))]
 pub struct CheckedDomain {
-    /// Data under the &lt;cd&gt; tag
+    /// Data under the `<cd>` tag
     #[xml(rename = "cd")]
     pub inner: Checked,
 }
 
-/// Type that represents the &lt;chkData&gt; tag for host check response
+/// Type that represents the `<chkData>` tag for host check response
 #[derive(Debug, FromXml)]
 #[xml(rename = "chkData", ns(XMLNS))]
 pub struct CheckData {
