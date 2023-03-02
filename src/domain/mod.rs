@@ -1,3 +1,7 @@
+//! Mapping for EPP domain objects
+//!
+//! As described in [RFC 5731](https://tools.ietf.org/html/rfc5731).
+
 use std::borrow::Cow;
 use std::fmt;
 use std::net::IpAddr;
