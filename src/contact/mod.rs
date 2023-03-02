@@ -6,7 +6,7 @@ use std::borrow::Cow;
 use std::fmt;
 use std::str::FromStr;
 
-use instant_xml::{display_to_xml, from_xml_str, FromXml, ToXml};
+use instant_xml::{display_to_xml, from_xml_str, Deserializer, FromXml, Serializer, ToXml};
 
 pub mod check;
 pub use check::ContactCheck;
@@ -220,10 +220,107 @@ impl<'a> PostalInfo<'a> {
 }
 
 /// The `<status>` type on contact transactions
-#[derive(Debug, FromXml, ToXml)]
-#[xml(rename = "status", ns(XMLNS))]
-pub struct Status<'a> {
-    /// The status name, represented by the 's' attr on `<status>` tags
-    #[xml(attribute, rename = "s")]
-    pub status: Cow<'a, str>,
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum Status {
+    ClientDeleteProhibited,
+    ServerDeleteProhibited,
+    ClientTransferProhibited,
+    ServerTransferProhibited,
+    ClientUpdateProhibited,
+    ServerUpdateProhibited,
+    Linked,
+    Ok,
+    PendingCreate,
+    PendingDelete,
+    PendingTransfer,
+    PendingUpdate,
+}
+
+impl Status {
+    pub fn as_str(&self) -> &'static str {
+        use Status::*;
+        match self {
+            ClientDeleteProhibited => "clientDeleteProhibited",
+            ServerDeleteProhibited => "serverDeleteProhibited",
+            ClientTransferProhibited => "clientTransferProhibited",
+            ServerTransferProhibited => "serverTransferProhibited",
+            ClientUpdateProhibited => "clientUpdateProhibited",
+            ServerUpdateProhibited => "serverUpdateProhibited",
+            Linked => "linked",
+            Ok => "ok",
+            PendingCreate => "pendingCreate",
+            PendingDelete => "pendingDelete",
+            PendingTransfer => "pendingTransfer",
+            PendingUpdate => "pendingUpdate",
+        }
+    }
+}
+
+impl ToXml for Status {
+    fn serialize<W: fmt::Write + ?Sized>(
+        &self,
+        _: Option<instant_xml::Id<'_>>,
+        serializer: &mut Serializer<W>,
+    ) -> Result<(), instant_xml::Error> {
+        serializer.write_start("status", XMLNS)?;
+        serializer.write_attr("s", XMLNS, &self.as_str())?;
+        serializer.end_empty()
+    }
+}
+
+impl<'xml> FromXml<'xml> for Status {
+    fn matches(id: instant_xml::Id<'_>, _: Option<instant_xml::Id<'_>>) -> bool {
+        id == instant_xml::Id {
+            ns: XMLNS,
+            name: "status",
+        }
+    }
+
+    fn deserialize<'cx>(
+        into: &mut Self::Accumulator,
+        field: &'static str,
+        deserializer: &mut Deserializer<'cx, 'xml>,
+    ) -> Result<(), instant_xml::Error> {
+        use instant_xml::de::Node;
+        use instant_xml::{Error, Id};
+
+        let node = match deserializer.next() {
+            Some(result) => result?,
+            None => return Err(Error::MissingValue(field)),
+        };
+
+        let attr = match node {
+            Node::Attribute(attr) => attr,
+            Node::Open(_) | Node::Text(_) => return Err(Error::MissingValue(field)),
+            node => return Err(Error::UnexpectedNode(format!("{node:?} in Status"))),
+        };
+
+        let id = deserializer.attribute_id(&attr)?;
+        let expected = Id { ns: "", name: "s" };
+        if id != expected {
+            return Err(Error::MissingValue(field));
+        }
+
+        *into = Some(match attr.value {
+            "clientDeleteProhibited" => Status::ClientDeleteProhibited,
+            "serverDeleteProhibited" => Status::ServerDeleteProhibited,
+            "clientTransferProhibited" => Status::ClientTransferProhibited,
+            "serverTransferProhibited" => Status::ServerTransferProhibited,
+            "clientUpdateProhibited" => Status::ClientUpdateProhibited,
+            "serverUpdateProhibited" => Status::ServerUpdateProhibited,
+            "linked" => Status::Linked,
+            "ok" => Status::Ok,
+            "pendingCreate" => Status::PendingCreate,
+            "pendingDelete" => Status::PendingDelete,
+            "pendingTransfer" => Status::PendingTransfer,
+            "pendingUpdate" => Status::PendingUpdate,
+            val => return Err(Error::UnexpectedValue(format!("invalid status {val:?}"))),
+        });
+
+        deserializer.ignore()?;
+        Ok(())
+    }
+
+    type Accumulator = Option<Status>;
+    const KIND: instant_xml::Kind = instant_xml::Kind::Element;
 }
