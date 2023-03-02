@@ -6,28 +6,55 @@ use crate::extensions::low_balance::LowBalance;
 use crate::host::info::InfoData;
 use crate::request::{Command, Transaction};
 
-impl<'a> Transaction<NoExtension> for MessagePoll<'a> {}
+impl Transaction<NoExtension> for MessagePoll {}
 
-impl<'a> Command for MessagePoll<'a> {
+impl Command for MessagePoll {
     type Response = MessagePollResponse;
+    const COMMAND: &'static str = "poll";
+}
+
+impl Transaction<NoExtension> for MessageAck<'_> {}
+
+impl Command for MessageAck<'_> {
+    type Response = String;
     const COMMAND: &'static str = "poll";
 }
 
 // Request
 
-#[derive(Debug, ToXml)]
-/// Type for EPP XML `<poll>` command for message poll
-#[xml(rename = "poll", ns(EPP_XMLNS))]
-pub struct MessagePoll<'a> {
-    /// The type of operation to perform
-    /// The value is "req" for message polling
-    #[xml(attribute)]
-    op: &'a str,
+/// Type for EPP XML `<poll>` command with `op="req"`
+#[derive(Debug)]
+pub struct MessagePoll;
+
+impl ToXml for MessagePoll {
+    fn serialize<W: std::fmt::Write + ?Sized>(
+        &self,
+        _: Option<instant_xml::Id<'_>>,
+        serializer: &mut instant_xml::Serializer<W>,
+    ) -> Result<(), instant_xml::Error> {
+        serializer.write_start("poll", EPP_XMLNS)?;
+        serializer.write_attr("op", EPP_XMLNS, &"req")?;
+        serializer.end_empty()
+    }
 }
 
-impl Default for MessagePoll<'static> {
-    fn default() -> Self {
-        Self { op: "req" }
+/// Type for EPP XML `<poll>` command with `op="ack"`
+#[derive(Debug)]
+pub struct MessageAck<'a> {
+    /// The ID of the message to be acknowledged
+    pub message_id: &'a str,
+}
+
+impl ToXml for MessageAck<'_> {
+    fn serialize<W: std::fmt::Write + ?Sized>(
+        &self,
+        _: Option<instant_xml::Id<'_>>,
+        serializer: &mut instant_xml::Serializer<W>,
+    ) -> Result<(), instant_xml::Error> {
+        serializer.write_start("poll", EPP_XMLNS)?;
+        serializer.write_attr("op", EPP_XMLNS, &"ack")?;
+        serializer.write_attr("msgID", EPP_XMLNS, &self.message_id)?;
+        serializer.end_empty()
     }
 }
 
@@ -45,35 +72,6 @@ pub enum MessagePollResponse {
     LowBalance(LowBalance),
 }
 
-impl<'a> Transaction<NoExtension> for MessageAck<'a> {}
-
-impl<'a> Command for MessageAck<'a> {
-    type Response = String;
-    const COMMAND: &'static str = "poll";
-}
-
-#[derive(Debug, ToXml)]
-/// Type for EPP XML `<poll>` command for message ack
-#[xml(rename = "poll", ns(EPP_XMLNS))]
-pub struct MessageAck<'a> {
-    /// The type of operation to perform
-    /// The value is "ack" for message acknowledgement
-    #[xml(attribute)]
-    op: &'a str,
-    /// The ID of the message to be acknowledged
-    #[xml(rename = "msgID", attribute)]
-    message_id: &'a str,
-}
-
-impl<'a> MessageAck<'a> {
-    pub fn new(message_id: &'a str) -> Self {
-        Self {
-            op: "ack",
-            message_id,
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::{MessageAck, MessagePoll, MessagePollResponse};
@@ -86,7 +84,9 @@ mod tests {
 
     #[test]
     fn ack_command() {
-        let object = MessageAck::new("12345");
+        let object = MessageAck {
+            message_id: "12345",
+        };
         assert_serialized("request/poll/ack.xml", &object);
     }
 
@@ -104,7 +104,7 @@ mod tests {
 
     #[test]
     fn poll_command() {
-        let object = MessagePoll::default();
+        let object = MessagePoll;
         assert_serialized("request/poll/poll.xml", &object);
     }
 
