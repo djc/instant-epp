@@ -27,23 +27,23 @@ impl<'a> HostUpdate<'a> {
         }
     }
 
-    /// Sets the data for the &lt;chg&gt; element of the host update
+    /// Sets the data for the `<chg>` element of the host update
     pub fn info(&mut self, info: HostChangeInfo<'a>) {
         self.host.change_info = Some(info);
     }
 
-    /// Sets the data for the &lt;add&gt; element of the host update
+    /// Sets the data for the `<add>` element of the host update
     pub fn add(&mut self, add: HostAdd<'a>) {
         self.host.add = Some(add);
     }
 
-    /// Sets the data for the &lt;rem&gt; element of the host update
+    /// Sets the data for the `<rem>` element of the host update
     pub fn remove(&mut self, remove: HostRemove<'a>) {
         self.host.remove = Some(remove);
     }
 }
 
-/// Type for data under the &lt;chg&gt; tag
+/// Type for data under the `<chg>` tag
 #[derive(Debug, ToXml)]
 #[xml(rename = "chg", ns(XMLNS))]
 pub struct HostChangeInfo<'a> {
@@ -51,7 +51,7 @@ pub struct HostChangeInfo<'a> {
     pub name: &'a str,
 }
 
-/// Type for data under the &lt;add&gt; and &lt;rem&gt; tags
+/// Type for data under the `<add>` and `<rem>` tags
 #[derive(Debug, ToXml)]
 #[xml(rename = "add", ns(XMLNS))]
 pub struct HostAdd<'a> {
@@ -63,7 +63,7 @@ pub struct HostAdd<'a> {
     pub statuses: Option<&'a [Status<'a>]>,
 }
 
-/// Type for data under the &lt;add&gt; and &lt;rem&gt; tags
+/// Type for data under the `<add>` and `<rem>` tags
 #[derive(Debug, ToXml)]
 #[xml(rename = "rem", ns(XMLNS))]
 pub struct HostRemove<'a> {
@@ -75,7 +75,7 @@ pub struct HostRemove<'a> {
     pub statuses: Option<&'a [Status<'a>]>,
 }
 
-/// Type for data under the host &lt;update&gt; tag
+/// Type for data under the host `<update>` tag
 #[derive(Debug, ToXml)]
 #[xml(rename = "update", ns(XMLNS))]
 pub struct HostUpdateRequest<'a> {
@@ -92,7 +92,7 @@ pub struct HostUpdateRequest<'a> {
     change_info: Option<HostChangeInfo<'a>>,
 }
 
-/// Type for EPP XML &lt;update&gt; command for hosts
+/// Type for EPP XML `<update>` command for hosts
 #[derive(Debug, ToXml)]
 #[xml(rename = "update", ns(EPP_XMLNS))]
 pub struct HostUpdate<'a> {

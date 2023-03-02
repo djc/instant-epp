@@ -16,21 +16,21 @@ impl<'a> Command for ContactInfo<'a> {
 
 // Request
 
-/// Type for elements under the contact &lt;info&gt; tag
+/// Type for elements under the contact `<info>` tag
 #[derive(Debug, ToXml)]
 #[xml(rename = "info", ns(XMLNS))]
 pub struct ContactInfoRequest<'a> {
     /// The contact id for the info command
     id: &'a str,
-    /// The &lt;authInfo&gt; data
+    /// The `<authInfo>` data
     auth_info: ContactAuthInfo<'a>,
 }
 
-/// Type for EPP XML &lt;info&gt; command for contacts
+/// Type for EPP XML `<info>` command for contacts
 #[derive(Debug, ToXml)]
 #[xml(rename = "info", ns(EPP_XMLNS))]
 pub struct ContactInfo<'a> {
-    /// Data for &lt;info&gt; command for contact
+    /// Data for `<info>` command for contact
     info: ContactInfoRequest<'a>,
 }
 
@@ -47,7 +47,7 @@ impl<'a> ContactInfo<'a> {
 
 // Response
 
-/// Type that represents the &lt;infData&gt; tag for contact check response
+/// Type that represents the `<infData>` tag for contact check response
 #[derive(Debug, FromXml)]
 #[xml(rename = "infData", ns(XMLNS))]
 pub struct InfoData {

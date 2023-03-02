@@ -7,30 +7,30 @@ use instant_xml::{FromXml, Kind};
 
 use crate::common::EPP_XMLNS;
 
-/// Type corresponding to the <undef> tag an EPP response XML
+/// Type corresponding to the `<undef>` tag an EPP response XML
 #[derive(Debug, Eq, FromXml, PartialEq)]
 #[xml(rename = "undef", ns(EPP_XMLNS))]
 pub struct Undef;
 
-/// Type corresponding to the <value> tag under <extValue> in an EPP response XML
+/// Type corresponding to the `<value>` tag under `<extValue>` in an EPP response XML
 #[derive(Debug, Eq, FromXml, PartialEq)]
 #[xml(rename = "value", ns(EPP_XMLNS))]
 pub struct ResultValue {
-    /// The <undef> element
+    /// The `<undef>` element
     pub undef: Undef,
 }
 
-/// Type corresponding to the <extValue> tag in an EPP response XML
+/// Type corresponding to the `<extValue>` tag in an EPP response XML
 #[derive(Debug, Eq, FromXml, PartialEq)]
 #[xml(rename = "extValue", ns(EPP_XMLNS))]
 pub struct ExtValue {
-    /// Data under the <value> tag
+    /// Data under the `<value>` tag
     pub value: ResultValue,
-    /// Data under the <reason> tag
+    /// Data under the `<reason>` tag
     pub reason: String,
 }
 
-/// Type corresponding to the <result> tag in an EPP response XML
+/// Type corresponding to the `<result>` tag in an EPP response XML
 #[derive(Debug, Eq, FromXml, PartialEq)]
 #[xml(rename = "result", ns(EPP_XMLNS))]
 pub struct EppResult {
@@ -40,7 +40,7 @@ pub struct EppResult {
     /// The result message
     #[xml(rename = "msg")]
     pub message: String,
-    /// Data under the <extValue> tag
+    /// Data under the `<extValue>` tag
     pub ext_value: Option<ExtValue>,
 }
 
@@ -190,7 +190,7 @@ impl<'de> serde::de::Visitor<'de> for ResultCodeVisitor {
     }
 }
 
-/// Type corresponding to the <trID> tag in an EPP response XML
+/// Type corresponding to the `<trID>` tag in an EPP response XML
 #[derive(Debug, Eq, FromXml, PartialEq)]
 #[xml(rename = "trID", ns(EPP_XMLNS))]
 pub struct ResponseTRID {
@@ -202,7 +202,7 @@ pub struct ResponseTRID {
     pub server_tr_id: String,
 }
 
-/// Type corresponding to the <msgQ> tag in an EPP response XML
+/// Type corresponding to the `<msgQ>` tag in an EPP response XML
 #[derive(Debug, Eq, FromXml, PartialEq)]
 #[xml(rename = "msgQ", ns(EPP_XMLNS))]
 pub struct MessageQueue {
@@ -230,20 +230,20 @@ pub struct Message {
 }
 
 #[derive(Debug, FromXml, PartialEq)]
-/// Type corresponding to the &lt;response&gt; tag in an EPP response XML
-/// containing an &lt;extension&gt; tag
+/// Type corresponding to the `<response>` tag in an EPP response XML
+/// containing an `<extension>` tag
 #[xml(rename = "response", ns(EPP_XMLNS))]
 pub struct Response<D, E> {
-    /// Data under the <result> tag
+    /// Data under the `<result>` tag
     pub result: EppResult,
-    /// Data under the <msgQ> tag
+    /// Data under the `<msgQ>` tag
     #[xml(rename = "msgQ")]
     pub message_queue: Option<MessageQueue>,
-    /// Data under the &lt;resData&gt; tag
+    /// Data under the `<resData>` tag
     pub res_data: Option<ResponseData<D>>,
-    /// Data under the &lt;extension&gt; tag
+    /// Data under the `<extension>` tag
     pub extension: Option<Extension<E>>,
-    /// Data under the <trID> tag
+    /// Data under the `<trID>` tag
     pub tr_ids: ResponseTRID,
 }
 
@@ -260,19 +260,19 @@ impl<D> ResponseData<D> {
 }
 
 #[derive(Debug, FromXml, PartialEq)]
-/// Type corresponding to the &lt;response&gt; tag in an EPP response XML
-/// without <msgQ> or &lt;resData&gt; sections. Generally used for error handling
+/// Type corresponding to the `<response>` tag in an EPP response XML
+/// without `<msgQ>` or `<resData>` sections. Generally used for error handling
 #[xml(rename = "response", ns(EPP_XMLNS))]
 pub struct ResponseStatus {
-    /// Data under the <result> tag
+    /// Data under the `<result>` tag
     pub result: EppResult,
     #[xml(rename = "trID")]
-    /// Data under the <trID> tag
+    /// Data under the `<trID>` tag
     pub tr_ids: ResponseTRID,
 }
 
 impl<T, E> Response<T, E> {
-    /// Returns the data under the corresponding &lt;resData&gt; from the EPP XML
+    /// Returns the data under the corresponding `<resData>` from the EPP XML
     pub fn res_data(&self) -> Option<&T> {
         match &self.res_data {
             Some(res_data) => Some(&res_data.data),
@@ -287,7 +287,7 @@ impl<T, E> Response<T, E> {
         }
     }
 
-    /// Returns the data under the corresponding <msgQ> from the EPP XML
+    /// Returns the data under the corresponding `<msgQ>` from the EPP XML
     pub fn message_queue(&self) -> Option<&MessageQueue> {
         match &self.message_queue {
             Some(queue) => Some(queue),

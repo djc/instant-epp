@@ -64,7 +64,7 @@ impl<'a> Extension for NameStore<'a> {
 }
 
 #[derive(Debug, FromXml, ToXml)]
-/// Type for EPP XML &lt;namestoreExt&gt; extension
+/// Type for EPP XML `<namestoreExt>` extension
 #[xml(rename = "namestoreExt", ns(XMLNS))]
 pub struct NameStore<'a> {
     /// The object holding the list of domains to be checked

@@ -13,7 +13,7 @@ impl<'a> Command for ContactDelete<'a> {
     const COMMAND: &'static str = "delete";
 }
 
-/// Type containing the data for the &lt;delete&gt; tag for contacts
+/// Type containing the data for the `<delete>` tag for contacts
 #[derive(Debug, ToXml)]
 #[xml(rename = "delete", ns(XMLNS))]
 pub struct ContactDeleteRequest<'a> {
@@ -21,11 +21,11 @@ pub struct ContactDeleteRequest<'a> {
     id: &'a str,
 }
 
-/// The &lt;delete&gt; type for the contact delete EPP command
+/// The `<delete>` type for the contact delete EPP command
 #[derive(Debug, ToXml)]
 #[xml(rename = "delete", ns(EPP_XMLNS))]
 pub struct ContactDelete<'a> {
-    /// The data for the &lt;delete&gt; tag for a contact delete command
+    /// The data for the `<delete>` tag for a contact delete command
     contact: ContactDeleteRequest<'a>,
 }
 

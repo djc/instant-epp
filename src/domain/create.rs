@@ -16,7 +16,7 @@ impl<'a> Command for DomainCreate<'a> {
 
 // Request
 
-/// Type for elements under the domain &lt;create&gt; tag
+/// Type for elements under the domain `<create>` tag
 #[derive(Debug, ToXml)]
 #[xml(rename = "create", ns(XMLNS))]
 pub struct DomainCreateRequestData<'a> {
@@ -36,7 +36,7 @@ pub struct DomainCreateRequestData<'a> {
 }
 
 #[derive(Debug, ToXml)]
-/// Type for EPP XML &lt;create&gt; command for domains
+/// Type for EPP XML `<create>` command for domains
 #[xml(rename = "create", ns(EPP_XMLNS))]
 pub struct DomainCreate<'a> {
     /// The data for the domain to be created with
@@ -69,7 +69,7 @@ impl<'a> DomainCreate<'a> {
 
 // Response
 
-/// Type that represents the &lt;chkData&gt; tag for domain create response
+/// Type that represents the `<chkData>` tag for domain create response
 #[derive(Debug, FromXml)]
 #[xml(rename = "creData", ns(XMLNS))]
 pub struct CreateData {

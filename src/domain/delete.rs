@@ -21,7 +21,7 @@ impl<'a> DomainDelete<'a> {
     }
 }
 
-/// Type for &lt;name&gt; element under the domain &lt;delete&gt; tag
+/// Type for `<name>` element under the domain `<delete>` tag
 #[derive(Debug, ToXml)]
 #[xml(rename = "delete", ns(XMLNS))]
 pub struct DomainDeleteRequestData<'a> {
@@ -30,10 +30,10 @@ pub struct DomainDeleteRequestData<'a> {
 }
 
 #[derive(Debug, ToXml)]
-/// Type for EPP XML &lt;delete&gt; command for domains
+/// Type for EPP XML `<delete>` command for domains
 #[xml(rename = "delete", ns(EPP_XMLNS))]
 pub struct DomainDelete<'a> {
-    /// The data under the &lt;delete&gt; tag for domain deletion
+    /// The data under the `<delete>` tag for domain deletion
     domain: DomainDeleteRequestData<'a>,
 }
 

@@ -13,7 +13,7 @@ impl<'a> Command for MessageAck<'a> {
 }
 
 #[derive(Debug, ToXml)]
-/// Type for EPP XML &lt;poll&gt; command for message ack
+/// Type for EPP XML `<poll>` command for message ack
 #[xml(rename = "poll", ns(EPP_XMLNS))]
 pub struct MessageAck<'a> {
     /// The type of operation to perform

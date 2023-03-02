@@ -10,7 +10,7 @@ use crate::{
 
 impl<'a> Transaction<NoExtension> for Login<'a> {}
 
-/// Type corresponding to the &lt;login&gt; tag in an EPP XML login request
+/// Type corresponding to the `<login>` tag in an EPP XML login request
 #[derive(Debug, Eq, PartialEq, ToXml)]
 #[xml(rename = "login", ns(EPP_XMLNS))]
 pub struct Login<'a> {
@@ -23,9 +23,9 @@ pub struct Login<'a> {
     /// A new password which should be set
     #[xml(rename = "newPW")]
     new_password: Option<&'a str>,
-    /// Data under the <options> tag
+    /// Data under the `<options>` tag
     options: Options<'a>,
-    /// Data under the <svcs> tag
+    /// Data under the `<svcs>` tag
     #[xml(rename = "svcs")]
     services: Services<'a>,
 }
@@ -58,12 +58,12 @@ impl<'a> Login<'a> {
         }
     }
 
-    /// Sets the <options> tag data
+    /// Sets the `<options>` tag data
     pub fn options(&mut self, options: Options<'a>) {
         self.options = options;
     }
 
-    /// Sets the <svcs> tag data
+    /// Sets the `<svcs>` tag data
     pub fn services(&mut self, services: Services<'a>) {
         self.services = services;
     }

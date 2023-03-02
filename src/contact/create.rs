@@ -16,29 +16,29 @@ impl<'a> Command for ContactCreate<'a> {
 
 // Request
 
-/// Type for elements under the contact &lt;create&gt; tag
+/// Type for elements under the contact `<create>` tag
 #[derive(Debug, ToXml)]
 #[xml(rename = "create", ns(XMLNS))]
 pub struct ContactCreateRequest<'a> {
-    /// Contact &lt;id&gt; tag
+    /// Contact `<id>` tag
     id: &'a str,
-    /// Contact &lt;postalInfo&gt; tag
+    /// Contact `<postalInfo>` tag
     postal_info: PostalInfo<'a>,
-    /// Contact &lt;voice&gt; tag
+    /// Contact `<voice>` tag
     voice: Voice<'a>,
-    /// Contact &lt;fax&gt; tag,]
+    /// Contact `<fax>` tag,]
     fax: Option<Fax<'a>>,
-    /// Contact &lt;email&gt; tag
+    /// Contact `<email>` tag
     email: &'a str,
-    /// Contact &lt;authInfo&gt; tag
+    /// Contact `<authInfo>` tag
     auth_info: ContactAuthInfo<'a>,
 }
 
-/// Type for EPP XML &lt;create&gt; command for contacts
+/// Type for EPP XML `<create>` command for contacts
 #[derive(Debug, ToXml)]
 #[xml(rename = "create", ns(EPP_XMLNS))]
 pub struct ContactCreate<'a> {
-    /// Data for &lt;create&gt; command for contact
+    /// Data for `<create>` command for contact
     pub contact: ContactCreateRequest<'a>,
 }
 
@@ -62,7 +62,7 @@ impl<'a> ContactCreate<'a> {
         }
     }
 
-    /// Sets the &lt;fax&gt; data for the request
+    /// Sets the `<fax>` data for the request
     pub fn set_fax(&mut self, fax: Fax<'a>) {
         self.contact.fax = Some(fax);
     }
@@ -70,7 +70,7 @@ impl<'a> ContactCreate<'a> {
 
 // Response
 
-/// Type that represents the &lt;creData&gt; tag for contact create response
+/// Type that represents the `<creData>` tag for contact create response
 #[derive(Debug, FromXml)]
 #[xml(rename = "creData", ns(XMLNS))]
 pub struct CreateData {

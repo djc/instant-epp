@@ -25,11 +25,11 @@ pub struct Update<T> {
     pub data: T,
 }
 
-/// Type corresponding to the &lt;restore&gt; tag for an rgp restore request
+/// Type corresponding to the `<restore>` tag for an rgp restore request
 #[derive(Debug, ToXml)]
 #[xml(rename = "restore", ns(XMLNS))]
 pub struct RgpRestoreRequest<'a> {
-    /// The value of the op attribute in the &lt;restore&gt; tag
+    /// The value of the op attribute in the `<restore>` tag
     #[xml(attribute)]
     pub op: &'a str,
 }
@@ -42,7 +42,7 @@ impl Default for RgpRestoreRequest<'static> {
 
 // Response
 
-/// Type that represents the &lt;rgpStatus&gt; tag for domain rgp restore request response
+/// Type that represents the `<rgpStatus>` tag for domain rgp restore request response
 #[derive(Debug, FromXml)]
 #[xml(rename = "rgpStatus", ns(XMLNS))]
 pub struct RgpStatus {
@@ -53,21 +53,21 @@ pub struct RgpStatus {
 
 #[derive(Debug, FromXml)]
 #[xml(rename = "upData", ns(XMLNS))]
-/// Type that represents the &lt;resData&gt; tag for domain transfer response
+/// Type that represents the `<resData>` tag for domain transfer response
 pub struct RgpRequestUpdateResponse {
-    /// Data under the &lt;rgpStatus&gt; tag
+    /// Data under the `<rgpStatus>` tag
     pub rgp_status: Vec<RgpStatus>,
 }
 
 #[derive(Debug, FromXml)]
 #[xml(rename = "infData", ns(XMLNS))]
-/// Type that represents the &lt;resData&gt; tag for domain transfer response
+/// Type that represents the `<resData>` tag for domain transfer response
 pub struct RgpRequestInfoResponse {
-    /// Data under the &lt;rgpStatus&gt; tag
+    /// Data under the `<rgpStatus>` tag
     pub rgp_status: Vec<RgpStatus>,
 }
 
-/// Type that represents the &lt;resData&gt; tag for domain transfer response
+/// Type that represents the `<resData>` tag for domain transfer response
 #[derive(Debug, FromXml)]
 #[xml(forward)]
 pub enum RgpRequestResponse {

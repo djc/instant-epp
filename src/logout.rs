@@ -15,7 +15,7 @@ impl Command for Logout {
 }
 
 #[derive(Debug, Eq, FromXml, PartialEq, ToXml)]
-/// Type corresponding to the &lt;logout&gt; tag in an EPP XML logout request
+/// Type corresponding to the `<logout>` tag in an EPP XML logout request
 #[xml(rename = "logout", ns(EPP_XMLNS))]
 pub struct Logout;
 

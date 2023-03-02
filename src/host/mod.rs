@@ -25,16 +25,16 @@ pub use update::HostUpdate;
 
 pub const XMLNS: &str = "urn:ietf:params:xml:ns:host-1.0";
 
-/// The &lt;status&gt; type on contact transactions
+/// The `<status>` type on contact transactions
 #[derive(Debug, FromXml, ToXml)]
 #[xml(rename = "status", ns(XMLNS))]
 pub struct Status<'a> {
-    /// The status name, represented by the 's' attr on &lt;status&gt; tags
+    /// The status name, represented by the 's' attr on `<status>` tags
     #[xml(attribute, rename = "s")]
     pub status: Cow<'a, str>,
 }
 
-/// The &lt;hostAddr&gt; types domain or host transactions
+/// The `<hostAddr>` types domain or host transactions
 #[derive(Debug, FromXml, ToXml)]
 #[xml(rename = "addr", ns(XMLNS))]
 pub(crate) struct HostAddr<'a> {

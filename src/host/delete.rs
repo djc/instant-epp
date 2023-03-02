@@ -21,7 +21,7 @@ impl<'a> HostDelete<'a> {
     }
 }
 
-/// Type for data under the host &lt;delete&gt; tag
+/// Type for data under the host `<delete>` tag
 #[derive(Debug, ToXml)]
 #[xml(rename = "delete", ns(XMLNS))]
 pub struct HostDeleteRequest<'a> {
@@ -29,7 +29,7 @@ pub struct HostDeleteRequest<'a> {
     name: &'a str,
 }
 
-/// Type for EPP XML &lt;delete&gt; command for hosts
+/// Type for EPP XML `<delete>` command for hosts
 #[derive(Debug, ToXml)]
 #[xml(rename = "delete", ns(EPP_XMLNS))]
 pub struct HostDelete<'a> {

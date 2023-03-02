@@ -35,14 +35,14 @@ pub use update::DomainUpdate;
 
 pub const XMLNS: &str = "urn:ietf:params:xml:ns:domain-1.0";
 
-/// The &lt;hostAttr&gt; type for domain transactions
+/// The `<hostAttr>` type for domain transactions
 #[derive(Clone, Debug, Eq, FromXml, PartialEq, ToXml)]
 #[xml(rename = "hostAttr", ns(XMLNS))]
 pub struct HostAttr<'a> {
-    /// The &lt;hostName&gt; tag
+    /// The `<hostName>` tag
     #[xml(rename = "hostName")]
     pub name: Cow<'a, str>,
-    /// The &lt;hostAddr&gt; tags
+    /// The `<hostAddr>` tags
     #[xml(
         rename = "hostAddr",
         serialize_with = "serialize_host_addrs_option",
@@ -79,7 +79,7 @@ fn deserialize_host_addrs_option<'xml>(
     Ok(())
 }
 
-/// The &lt;hostAddr&gt; types domain or host transactions
+/// The `<hostAddr>` types domain or host transactions
 #[derive(Debug, FromXml, ToXml)]
 #[xml(rename = "hostAddr", ns(super::domain::XMLNS))]
 pub(crate) struct HostAddr<'a> {
@@ -137,7 +137,7 @@ pub struct NameServers<'a> {
     pub ns: Cow<'a, [HostInfo<'a>]>,
 }
 
-/// The &lt;contact&gt; type on domain creation and update requests
+/// The `<contact>` type on domain creation and update requests
 #[derive(Debug, FromXml, ToXml)]
 #[xml(rename = "contact", ns(XMLNS))]
 pub struct DomainContact<'a> {
@@ -149,7 +149,7 @@ pub struct DomainContact<'a> {
     pub id: Cow<'a, str>,
 }
 
-/// The &lt;period&gt; type for registration, renewal or transfer on domain transactions
+/// The `<period>` type for registration, renewal or transfer on domain transactions
 #[derive(Clone, Copy, Debug, ToXml)]
 #[xml(rename = "period", ns(XMLNS))]
 pub struct Period {
@@ -205,11 +205,11 @@ pub const SIX_MONTHS: Period = Period {
     length: 6,
 };
 
-/// The &lt;authInfo&gt; tag for domain and contact transactions
+/// The `<authInfo>` tag for domain and contact transactions
 #[derive(Clone, Debug, FromXml, ToXml)]
 #[xml(rename = "authInfo", ns(XMLNS))]
 pub struct DomainAuthInfo<'a> {
-    /// The &lt;pw&gt; tag under &lt;authInfo&gt;
+    /// The `<pw>` tag under `<authInfo>`
     #[xml(rename = "pw")]
     pub password: Cow<'a, str>,
 }
@@ -223,11 +223,11 @@ impl<'a> DomainAuthInfo<'a> {
     }
 }
 
-/// The &lt;status&gt; type on contact transactions
+/// The `<status>` type on contact transactions
 #[derive(Debug, FromXml, ToXml)]
 #[xml(rename = "status", ns(XMLNS))]
 pub struct Status<'a> {
-    /// The status name, represented by the 's' attr on &lt;status&gt; tags
+    /// The status name, represented by the 's' attr on `<status>` tags
     #[xml(attribute, rename = "s")]
     pub status: Cow<'a, str>,
 }
