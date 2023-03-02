@@ -63,7 +63,7 @@ pub mod extensions {
 }
 
 mod poll;
-pub use poll::{Ack, Poll};
+pub use poll::{Ack, Poll, PollData};
 
 pub use client::EppClient;
 pub use error::Error;
