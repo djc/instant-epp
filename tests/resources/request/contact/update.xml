@@ -5,10 +5,10 @@
             <update xmlns="urn:ietf:params:xml:ns:contact-1.0">
                 <id>eppdev-contact-3</id>
                 <add>
-                    <status s="clientTransferProhibited"></status>
+                    <status s="clientTransferProhibited" />
                 </add>
                 <rem>
-                    <status s="clientDeleteProhibited"></status>
+                    <status s="clientDeleteProhibited" />
                 </rem>
                 <chg>
                     <postalInfo type="loc">

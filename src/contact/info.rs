@@ -56,7 +56,7 @@ pub struct InfoData {
     /// The contact ROID
     pub roid: String,
     /// The list of contact statuses
-    pub statuses: Vec<Status<'static>>,
+    pub statuses: Vec<Status>,
     /// The postal info for the contact
     pub postal_info: PostalInfo<'static>,
     /// The voice data for the contact
@@ -93,6 +93,7 @@ mod tests {
     use chrono::{TimeZone, Utc};
 
     use super::ContactInfo;
+    use crate::contact::Status;
     use crate::response::ResultCode;
     use crate::tests::{assert_serialized, response_from_file, CLTRID, SUCCESS_MSG, SVTRID};
 
@@ -116,7 +117,7 @@ mod tests {
         assert_eq!(object.result.message, SUCCESS_MSG);
         assert_eq!(result.id, "eppdev-contact-3");
         assert_eq!(result.roid, "UNDEF-ROID");
-        assert_eq!(result.statuses[0].status, "ok");
+        assert_eq!(result.statuses[0], Status::Ok);
         assert_eq!(result.postal_info.info_type, "loc");
         assert_eq!(result.postal_info.name, "John Doe");
         assert_eq!(result.postal_info.organization, "Acme Widgets");

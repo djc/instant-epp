@@ -74,19 +74,19 @@ pub struct ContactChangeInfo<'a> {
 /// Type for list of elements of the `<status>` tag for contact update request
 #[derive(Debug, ToXml)]
 pub struct StatusList<'a> {
-    status: &'a [Status<'a>],
+    status: &'a [Status],
 }
 
 #[derive(Debug, ToXml)]
 #[xml(rename = "add", ns(XMLNS))]
 struct AddStatuses<'a> {
-    statuses: &'a [Status<'a>],
+    statuses: &'a [Status],
 }
 
 #[derive(Debug, ToXml)]
 #[xml(rename = "rem", ns(XMLNS))]
 struct RemoveStatuses<'a> {
-    statuses: &'a [Status<'a>],
+    statuses: &'a [Status],
 }
 
 /// Type for elements under the contact `<update>` tag
@@ -125,14 +125,8 @@ mod tests {
         let voice = Voice::new("+33.47237942");
 
         object.set_info("newemail@eppdev.net", postal_info, voice, "eppdev-387323");
-        let add_statuses = &[Status {
-            status: "clientTransferProhibited".into(),
-        }];
-        object.add(add_statuses);
-        let remove_statuses = &[Status {
-            status: "clientDeleteProhibited".into(),
-        }];
-        object.remove(remove_statuses);
+        object.add(&[Status::ClientTransferProhibited]);
+        object.remove(&[Status::ClientDeleteProhibited]);
 
         assert_serialized("request/contact/update.xml", &object);
     }
