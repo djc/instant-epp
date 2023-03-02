@@ -82,7 +82,7 @@ pub struct InfoData {
     pub roid: String,
     /// The list of domain statuses
     #[xml(rename = "status")]
-    pub statuses: Option<Vec<Status<'static>>>,
+    pub statuses: Option<Vec<Status>>,
     /// The domain registrant
     pub registrant: Option<String>,
     /// The list of domain contacts
@@ -122,7 +122,7 @@ pub struct InfoData {
 #[cfg(test)]
 mod tests {
     use super::DomainInfo;
-    use crate::domain::{HostInfo, HostObj};
+    use crate::domain::{HostInfo, HostObj, Status};
     use crate::response::ResultCode;
     use crate::tests::{assert_serialized, response_from_file, CLTRID, SUCCESS_MSG, SVTRID};
     use chrono::{TimeZone, Utc};
@@ -150,8 +150,8 @@ mod tests {
         assert_eq!(object.result.message, SUCCESS_MSG);
         assert_eq!(result.name, "eppdev-1.com");
         assert_eq!(result.roid, "125899511_DOMAIN_COM-VRSN");
-        assert_eq!(statuses[0].status, "ok".to_string());
-        assert_eq!(statuses[1].status, "clientTransferProhibited".to_string());
+        assert_eq!(statuses[0], Status::Ok);
+        assert_eq!(statuses[1], Status::ClientTransferProhibited);
         assert_eq!(*registrant, "eppdev-contact-2");
         assert_eq!(contacts[0].id, "eppdev-contact-2".to_string());
         assert_eq!(contacts[0].contact_type, "admin".to_string());
