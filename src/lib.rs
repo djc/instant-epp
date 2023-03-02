@@ -63,11 +63,8 @@ pub mod extensions {
 }
 
 pub mod message {
-    pub mod ack;
-    pub use ack::MessageAck;
-
     pub mod poll;
-    pub use poll::MessagePoll;
+    pub use poll::{MessagePoll, MessageAck};
 }
 
 pub use client::EppClient;
