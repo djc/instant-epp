@@ -56,7 +56,7 @@ pub struct InfoData {
     pub roid: String,
     /// The list of host statuses
     #[xml(rename = "status")]
-    pub statuses: Vec<Status<'static>>,
+    pub statuses: Vec<Status>,
     /// The list of host IP addresses
     #[xml(rename = "addr", deserialize_with = "deserialize_host_addrs")]
     pub addresses: Vec<IpAddr>,
@@ -119,6 +119,7 @@ mod tests {
     use chrono::{TimeZone, Utc};
 
     use super::{HostInfo, IpAddr};
+    use crate::host::Status;
     use crate::response::ResultCode;
     use crate::tests::{assert_serialized, response_from_file, CLTRID, SUCCESS_MSG, SVTRID};
 
@@ -137,7 +138,7 @@ mod tests {
         assert_eq!(object.result.message, SUCCESS_MSG);
         assert_eq!(result.name, "host2.eppdev-1.com");
         assert_eq!(result.roid, "UNDEF-ROID");
-        assert_eq!(result.statuses[0].status, "ok".to_string());
+        assert_eq!(result.statuses[0], Status::Ok);
         assert_eq!(result.addresses[0], IpAddr::from([29, 245, 122, 14]));
         assert_eq!(
             result.addresses[1],

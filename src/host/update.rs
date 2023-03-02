@@ -60,7 +60,7 @@ pub struct HostAdd<'a> {
     pub addresses: Option<&'a [IpAddr]>,
     /// The statuses to be added to or removed from the host
     #[xml(rename = "host:status")]
-    pub statuses: Option<&'a [Status<'a>]>,
+    pub statuses: Option<&'a [Status]>,
 }
 
 /// Type for data under the `<add>` and `<rem>` tags
@@ -72,7 +72,7 @@ pub struct HostRemove<'a> {
     pub addresses: Option<&'a [IpAddr]>,
     /// The statuses to be added to or removed from the host
     #[xml(rename = "host:status")]
-    pub statuses: Option<&'a [Status<'a>]>,
+    pub statuses: Option<&'a [Status]>,
 }
 
 /// Type for data under the host `<update>` tag
@@ -118,13 +118,9 @@ mod tests {
             statuses: None,
         };
 
-        let statuses = &[Status {
-            status: "clientDeleteProhibited".into(),
-        }];
-
         let remove = HostRemove {
             addresses: None,
-            statuses: Some(statuses),
+            statuses: Some(&[Status::ClientDeleteProhibited]),
         };
 
         let mut object = HostUpdate::new("host1.eppdev-1.com");
