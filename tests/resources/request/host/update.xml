@@ -8,7 +8,7 @@
                     <addr ip="v6">2404:6800:4001:801::200e</addr>
                 </add>
                 <rem>
-                    <status s="clientDeleteProhibited"></status>
+                    <status s="clientDeleteProhibited" />
                 </rem>
                 <chg>
                     <name>host2.eppdev-1.com</name>

@@ -48,6 +48,7 @@ pub enum MessagePollResponse {
 #[cfg(test)]
 mod tests {
     use super::{MessagePoll, MessagePollResponse};
+    use crate::host::Status;
     use crate::response::ResultCode;
     use crate::tests::{assert_serialized, response_from_file, CLTRID, SVTRID};
 
@@ -133,7 +134,7 @@ mod tests {
             assert_eq!(host.name, "ns.test.com");
 
             assert_eq!(host.roid, "1234");
-            assert!(host.statuses.iter().any(|s| s.status == "ok"));
+            assert!(host.statuses.iter().any(|&s| s == Status::Ok));
             assert!(host
                 .addresses
                 .iter()
