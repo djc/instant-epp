@@ -87,12 +87,12 @@ mod tests {
     #[test]
     fn ack_command() {
         let object = MessageAck::new("12345");
-        assert_serialized("request/message/ack.xml", &object);
+        assert_serialized("request/poll/ack.xml", &object);
     }
 
     #[test]
     fn response() {
-        let object = response_from_file::<MessageAck>("response/message/ack.xml");
+        let object = response_from_file::<MessageAck>("response/poll/ack.xml");
         let msg = object.message_queue().unwrap();
 
         assert_eq!(object.result.code, ResultCode::CommandCompletedSuccessfully);
@@ -105,12 +105,12 @@ mod tests {
     #[test]
     fn poll_command() {
         let object = MessagePoll::default();
-        assert_serialized("request/message/poll.xml", &object);
+        assert_serialized("request/poll/poll.xml", &object);
     }
 
     #[test]
     fn domain_transfer_response() {
-        let object = response_from_file::<MessagePoll>("response/message/poll_domain_transfer.xml");
+        let object = response_from_file::<MessagePoll>("response/poll/poll_domain_transfer.xml");
         let result = object.res_data().unwrap();
         let msg = object.message_queue().unwrap();
 
@@ -157,7 +157,7 @@ mod tests {
 
     #[test]
     fn host_info_response() {
-        let object = response_from_file::<MessagePoll>("response/message/poll_host_info.xml");
+        let object = response_from_file::<MessagePoll>("response/poll/poll_host_info.xml");
         let result = object.res_data().unwrap();
         let msg = object.message_queue().unwrap();
 
@@ -207,7 +207,7 @@ mod tests {
 
     #[test]
     fn message_only_response() {
-        let object = response_from_file::<MessagePoll>("response/message/poll_message_only.xml");
+        let object = response_from_file::<MessagePoll>("response/poll/poll_message_only.xml");
         let msg = object.message_queue().unwrap();
         dbg!(&msg);
 
@@ -234,7 +234,7 @@ mod tests {
 
     #[test]
     fn empty_queue_response() {
-        let object = response_from_file::<MessagePoll>("response/message/poll_empty_queue.xml");
+        let object = response_from_file::<MessagePoll>("response/poll/poll_empty_queue.xml");
 
         assert_eq!(
             object.result.code,
