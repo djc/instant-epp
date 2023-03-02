@@ -63,7 +63,7 @@ pub struct DomainAdd<'a> {
     /// The list of contacts to add to or remove from the domain
     pub contacts: Option<&'a [DomainContact<'a>]>,
     /// The list of statuses to add to or remove from the domain
-    pub statuses: Option<&'a [Status<'a>]>,
+    pub statuses: Option<&'a [Status]>,
 }
 
 /// Type for elements under the `<add>` and `<rem>` tags for domain update
@@ -76,7 +76,7 @@ pub struct DomainRemove<'a> {
     /// The list of contacts to add to or remove from the domain
     pub contacts: Option<&'a [DomainContact<'a>]>,
     /// The list of statuses to add to or remove from the domain
-    pub statuses: Option<&'a [Status<'a>]>,
+    pub statuses: Option<&'a [Status]>,
 }
 
 /// Type for elements under the `<update>` tag for domain update
@@ -116,14 +116,10 @@ mod tests {
     fn command() {
         let mut object = DomainUpdate::new("eppdev.com");
 
-        let statuses = &[Status {
-            status: "clientDeleteProhibited".into(),
-        }];
-
         let add = DomainAdd {
             ns: None,
             contacts: None,
-            statuses: Some(statuses),
+            statuses: Some(&[Status::ClientDeleteProhibited]),
         };
 
         let contacts = &[DomainContact {

@@ -5,7 +5,7 @@
             <update xmlns="urn:ietf:params:xml:ns:domain-1.0">
                 <name>eppdev.com</name>
                 <add>
-                    <status s="clientDeleteProhibited"></status>
+                    <status s="clientDeleteProhibited" />
                 </add>
                 <rem>
                     <contact type="billing">eppdev-contact-2</contact>
