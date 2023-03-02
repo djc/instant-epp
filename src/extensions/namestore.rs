@@ -1,4 +1,6 @@
 //! Types for EPP namestore request and responses
+//!
+//! As described in [Namestore Extension Mapping](https://www.verisign.com/assets/epp-sdk/verisign_epp-extension_namestoreext_v01.html).
 
 use std::borrow::Cow;
 

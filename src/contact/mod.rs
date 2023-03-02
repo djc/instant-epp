@@ -1,3 +1,7 @@
+//! Mapping for EPP contact objects
+//!
+//! As described in [RFC 5733](https://tools.ietf.org/html/rfc5733).
+
 use std::borrow::Cow;
 use std::fmt;
 use std::str::FromStr;

@@ -1,4 +1,6 @@
 //! Types for EPP consolidate request
+//!
+//! As described in [ConsoliDate mapping](https://www.verisign.com/assets/consolidate-mapping.txt)
 
 use std::fmt;
 

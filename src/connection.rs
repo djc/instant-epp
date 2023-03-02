@@ -1,4 +1,6 @@
 //! Manages registry connections and reading/writing to them
+//!
+//! See also [RFC 5734](https://tools.ietf.org/html/rfc5734).
 
 use std::future::Future;
 use std::pin::Pin;
