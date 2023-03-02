@@ -42,6 +42,7 @@ pub mod hello;
 pub mod host;
 pub mod login;
 pub mod logout;
+pub mod poll;
 pub mod request;
 pub mod response;
 pub mod xml;
@@ -61,9 +62,6 @@ pub mod extensions {
         pub const XMLNS: &str = "urn:ietf:params:xml:ns:rgp-1.0";
     }
 }
-
-mod poll;
-pub use poll::{Ack, Poll, PollData};
 
 pub use client::EppClient;
 pub use error::Error;
