@@ -341,17 +341,7 @@ mod tests {
         assert_eq!(object.svc_menu.options.version, "1.0");
         assert_eq!(object.svc_menu.options.lang, "en");
         assert_eq!(object.svc_menu.services.obj_uris.len(), 4);
-        assert_eq!(
-            object
-                .svc_menu
-                .services
-                .svc_ext
-                .unwrap()
-                .ext_uris
-                .unwrap()
-                .len(),
-            5
-        );
+        assert_eq!(object.svc_menu.services.svc_ext.unwrap().ext_uris.len(), 5);
         assert_eq!(object.dcp.statement.len(), 2);
         assert_eq!(
             object.dcp.expiry.unwrap().inner,
