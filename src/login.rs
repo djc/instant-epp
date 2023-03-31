@@ -37,14 +37,6 @@ impl<'a> Login<'a> {
         new_password: Option<&'a str>,
         ext_uris: Option<&'_ [&'a str]>,
     ) -> Self {
-        let svc_ext = match ext_uris {
-            Some(uris) if !uris.is_empty() => {
-                let ext_uris = uris.iter().map(|&u| u.into()).collect();
-                Some(ServiceExtension { ext_uris })
-            }
-            _ => None,
-        };
-
         Self {
             username,
             password,
@@ -59,7 +51,11 @@ impl<'a> Login<'a> {
                     contact::XMLNS.into(),
                     domain::XMLNS.into(),
                 ],
-                svc_ext,
+                svc_ext: ext_uris.and_then(|uris| {
+                    (!uris.is_empty()).then(|| ServiceExtension {
+                        ext_uris: uris.iter().map(|&u| u.into()).collect(),
+                    })
+                }),
             },
         }
     }
