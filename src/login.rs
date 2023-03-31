@@ -94,7 +94,7 @@ mod tests {
     }
 
     #[test]
-    fn command_noèextension() {
+    fn command_no_extension() {
         let object = Login::new("username", "password", None, None);
         assert_serialized("request/login_no_extension.xml", &object);
         let object = Login::new("username", "password", None, Some(&[]));
