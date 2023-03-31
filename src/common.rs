@@ -58,7 +58,7 @@ impl<'a> Options<'a> {
 pub struct ServiceExtension<'a> {
     /// The service extension URIs being represented by `<extURI>` in EPP XML
     #[xml(rename = "extURI")]
-    pub ext_uris: Option<Vec<Cow<'a, str>>>,
+    pub ext_uris: Vec<Cow<'a, str>>,
 }
 
 /// The `<svcs>` type in EPP XML

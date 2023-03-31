@@ -37,8 +37,6 @@ impl<'a> Login<'a> {
         new_password: Option<&'a str>,
         ext_uris: Option<&'_ [&'a str]>,
     ) -> Self {
-        let ext_uris = ext_uris.map(|uris| uris.iter().map(|&u| u.into()).collect());
-
         Self {
             username,
             password,
@@ -53,7 +51,11 @@ impl<'a> Login<'a> {
                     contact::XMLNS.into(),
                     domain::XMLNS.into(),
                 ],
-                svc_ext: Some(ServiceExtension { ext_uris }),
+                svc_ext: ext_uris.and_then(|uris| {
+                    (!uris.is_empty()).then(|| ServiceExtension {
+                        ext_uris: uris.iter().map(|&u| u.into()).collect(),
+                    })
+                }),
             },
         }
     }
@@ -85,6 +87,14 @@ mod tests {
         let ext_uris = Some(&["http://schema.ispapi.net/epp/xml/keyvalue-1.0"][..]);
         let object = Login::new("username", "password", Some("new-password"), ext_uris);
         assert_serialized("request/login.xml", &object);
+    }
+
+    #[test]
+    fn command_no_extension() {
+        let object = Login::new("username", "password", None, None);
+        assert_serialized("request/login_no_extension.xml", &object);
+        let object = Login::new("username", "password", None, Some(&[]));
+        assert_serialized("request/login_no_extension.xml", &object);
     }
 
     #[test]
