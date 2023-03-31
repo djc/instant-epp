@@ -88,6 +88,14 @@ mod tests {
     }
 
     #[test]
+    fn command_noèextension() {
+        let object = Login::new("username", "password", None, None);
+        assert_serialized("request/login_no_extension.xml", &object);
+        let object = Login::new("username", "password", None, Some(&[]));
+        assert_serialized("request/login_no_extension.xml", &object);
+    }
+
+    #[test]
     fn response() {
         let object = response_from_file::<Login>("response/login.xml");
         assert_eq!(object.result.code, ResultCode::CommandCompletedSuccessfully);
