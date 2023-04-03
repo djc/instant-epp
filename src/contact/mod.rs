@@ -25,7 +25,7 @@ pub use update::ContactUpdate;
 
 pub const XMLNS: &str = "urn:ietf:params:xml:ns:contact-1.0";
 
-#[derive(Debug, Clone)]
+#[derive(Clone, Debug)]
 pub struct Country(celes::Country);
 
 impl<'xml> FromXml<'xml> for Country {
@@ -75,7 +75,7 @@ impl std::ops::Deref for Country {
 }
 
 /// The `<authInfo>` tag for domain and contact transactions
-#[derive(Debug, Clone, PartialEq, FromXml, ToXml)]
+#[derive(Clone, Debug, FromXml, PartialEq, ToXml)]
 #[xml(rename = "authInfo", ns(XMLNS))]
 pub struct ContactAuthInfo<'a> {
     /// The `<pw>` tag under `<authInfo>`
@@ -93,7 +93,7 @@ impl<'a> ContactAuthInfo<'a> {
 }
 
 /// The data for `<voice>` types on domain transactions
-#[derive(Debug, Clone, PartialEq, FromXml, ToXml)]
+#[derive(Clone, Debug, FromXml, PartialEq, ToXml)]
 #[xml(rename = "voice", ns(XMLNS))]
 pub struct Voice<'a> {
     /// The value of the 'x' attr on `<voice>` and `<fax>` tags
@@ -120,7 +120,7 @@ impl<'a> Voice<'a> {
 }
 
 /// The data for `<voice>` and `<fax>` types on domain transactions
-#[derive(Debug, Clone, FromXml, ToXml, PartialEq)]
+#[derive(Clone, Debug, FromXml, PartialEq, ToXml)]
 #[xml(rename = "fax", ns(XMLNS))]
 pub struct Fax<'a> {
     /// The value of the 'x' attr on `<voice>` and `<fax>` tags
@@ -147,7 +147,7 @@ impl<'a> Fax<'a> {
 }
 
 /// The `<addr>` type on contact transactions
-#[derive(Debug, Clone, FromXml, ToXml)]
+#[derive(Clone, Debug, FromXml, ToXml)]
 #[xml(rename = "addr", ns(XMLNS))]
 pub struct Address<'a> {
     /// The `<street>` tags under `<addr>`
@@ -187,7 +187,7 @@ impl<'a> Address<'a> {
 }
 
 /// The `<postalInfo>` type on contact transactions
-#[derive(Debug, Clone, FromXml, ToXml)]
+#[derive(Clone, Debug, FromXml, ToXml)]
 #[xml(rename = "postalInfo", ns(XMLNS))]
 pub struct PostalInfo<'a> {
     /// The 'type' attr on `<postalInfo>`
