@@ -75,7 +75,7 @@ impl std::ops::Deref for Country {
 }
 
 /// The `<authInfo>` tag for domain and contact transactions
-#[derive(Debug, Clone, FromXml, ToXml)]
+#[derive(Debug, Clone, PartialEq, FromXml, ToXml)]
 #[xml(rename = "authInfo", ns(XMLNS))]
 pub struct ContactAuthInfo<'a> {
     /// The `<pw>` tag under `<authInfo>`
@@ -93,7 +93,7 @@ impl<'a> ContactAuthInfo<'a> {
 }
 
 /// The data for `<voice>` types on domain transactions
-#[derive(Debug, Clone, FromXml, ToXml)]
+#[derive(Debug, Clone, PartialEq, FromXml, ToXml)]
 #[xml(rename = "voice", ns(XMLNS))]
 pub struct Voice<'a> {
     /// The value of the 'x' attr on `<voice>` and `<fax>` tags
@@ -120,7 +120,7 @@ impl<'a> Voice<'a> {
 }
 
 /// The data for `<voice>` and `<fax>` types on domain transactions
-#[derive(Debug, Clone, FromXml, ToXml)]
+#[derive(Debug, Clone, FromXml, ToXml, PartialEq)]
 #[xml(rename = "fax", ns(XMLNS))]
 pub struct Fax<'a> {
     /// The value of the 'x' attr on `<voice>` and `<fax>` tags
@@ -156,10 +156,10 @@ pub struct Address<'a> {
     pub city: Cow<'a, str>,
     /// The `<sp>` tag under `<addr>`
     #[xml(rename = "sp")]
-    pub province: Cow<'a, str>,
+    pub province: Option<Cow<'a, str>>,
     /// The `<pc>` tag under `<addr>`
     #[xml(rename = "pc")]
-    pub postal_code: Cow<'a, str>,
+    pub postal_code: Option<Cow<'a, str>>,
     /// The `<cc>` tag under `<addr>`
     #[xml(rename = "cc")]
     pub country: Country,
@@ -170,8 +170,8 @@ impl<'a> Address<'a> {
     pub fn new(
         street: &[&'a str],
         city: &'a str,
-        province: &'a str,
-        postal_code: &'a str,
+        province: Option<&'a str>,
+        postal_code: Option<&'a str>,
         country: Country,
     ) -> Self {
         let street = street.iter().map(|&s| s.into()).collect();
@@ -179,8 +179,8 @@ impl<'a> Address<'a> {
         Self {
             street,
             city: city.into(),
-            province: province.into(),
-            postal_code: postal_code.into(),
+            province: province.map(|sp| sp.into()),
+            postal_code: postal_code.map(|pc| pc.into()),
             country,
         }
     }
@@ -197,7 +197,7 @@ pub struct PostalInfo<'a> {
     pub name: Cow<'a, str>,
     /// The `<org>` tag under `<postalInfo>`
     #[xml(rename = "org")]
-    pub organization: Cow<'a, str>,
+    pub organization: Option<Cow<'a, str>>,
     /// The `<addr>` tag under `<postalInfo>`
     pub address: Address<'a>,
 }
@@ -207,13 +207,13 @@ impl<'a> PostalInfo<'a> {
     pub fn new(
         info_type: &'a str,
         name: &'a str,
-        organization: &'a str,
+        organization: Option<&'a str>,
         address: Address<'a>,
     ) -> Self {
         Self {
             info_type: info_type.into(),
             name: name.into(),
-            organization: organization.into(),
+            organization: organization.map(|org| org.into()),
             address,
         }
     }

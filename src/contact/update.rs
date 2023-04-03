@@ -120,8 +120,14 @@ mod tests {
         let mut object = ContactUpdate::new("eppdev-contact-3");
 
         let street = &["58", "Orchid Road"];
-        let address = Address::new(street, "Paris", "Paris", "392374", "FR".parse().unwrap());
-        let postal_info = PostalInfo::new("loc", "John Doe", "Acme Widgets", address);
+        let address = Address::new(
+            street,
+            "Paris",
+            Some("Paris"),
+            Some("392374"),
+            "FR".parse().unwrap(),
+        );
+        let postal_info = PostalInfo::new("loc", "John Doe", Some("Acme Widgets"), address);
         let voice = Voice::new("+33.47237942");
 
         object.set_info("newemail@eppdev.net", postal_info, voice, "eppdev-387323");
