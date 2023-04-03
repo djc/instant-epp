@@ -25,7 +25,7 @@ pub struct ContactCreateRequest<'a> {
     /// Contact `<postalInfo>` tag
     postal_info: PostalInfo<'a>,
     /// Contact `<voice>` tag
-    voice: Voice<'a>,
+    voice: Option<Voice<'a>>,
     /// Contact `<fax>` tag,]
     fax: Option<Fax<'a>>,
     /// Contact `<email>` tag
@@ -47,7 +47,7 @@ impl<'a> ContactCreate<'a> {
         id: &'a str,
         email: &'a str,
         postal_info: PostalInfo<'a>,
-        voice: Voice<'a>,
+        voice: Option<Voice<'a>>,
         auth_password: &'a str,
     ) -> Self {
         Self {
@@ -93,8 +93,14 @@ mod tests {
     #[test]
     fn command() {
         let street = &["58", "Orchid Road"];
-        let address = Address::new(street, "Paris", "Paris", "392374", "FR".parse().unwrap());
-        let postal_info = PostalInfo::new("int", "John Doe", "Acme Widgets", address);
+        let address = Address::new(
+            street,
+            "Paris",
+            Some("Paris"),
+            Some("392374"),
+            "FR".parse().unwrap(),
+        );
+        let postal_info = PostalInfo::new("int", "John Doe", Some("Acme Widgets"), address);
         let mut voice = Voice::new("+33.47237942");
         voice.set_extension("123");
         let mut fax = Fax::new("+33.86698799");
@@ -104,12 +110,27 @@ mod tests {
             "eppdev-contact-3",
             "contact@eppdev.net",
             postal_info,
-            voice,
+            Some(voice),
             "eppdev-387323",
         );
         object.set_fax(fax);
 
         assert_serialized("request/contact/create.xml", &object);
+    }
+
+    #[test]
+    fn command_minimal() {
+        let address = Address::new(&[], "Paris", None, None, "FR".parse().unwrap());
+        let postal_info = PostalInfo::new("int", "John Doe", None, address);
+        let object = ContactCreate::new(
+            "eppdev-contact-3",
+            "contact@eppdev.net",
+            postal_info,
+            None,
+            "eppdev-387323",
+        );
+
+        assert_serialized("request/contact/create_minimal.xml", &object);
     }
 
     #[test]
