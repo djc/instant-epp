@@ -61,6 +61,10 @@ pub mod extensions {
 
         pub const XMLNS: &str = "urn:ietf:params:xml:ns:rgp-1.0";
     }
+
+    /// Mapping for the [frnic-2.0
+    /// extension](https://www.afnic.fr/wp-media/uploads/2021/03/Guide_integration_technique_2019_V6_2.pdf)
+    pub mod frnic;
 }
 
 pub use client::EppClient;
