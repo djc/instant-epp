@@ -18,10 +18,10 @@ pub struct Create<T> {
 
 pub fn frnic_contact_create_physical_person<'a>(
     first_name: &'a str
-) -> Ext<Create<contact::FrnicContactCreate<'a>>> {
+) -> Ext<Create<contact::FrnicContactCreatePp<'a>>> {
     Ext {
         data: Create {
-            data: contact::FrnicContactCreate {
+            data: contact::FrnicContactCreatePp {
                 first_name: first_name.into(),
             }
         }
@@ -37,6 +37,7 @@ mod tests {
 
     #[test]
     fn contact_create_physical_person() {
+        // Guide d'intégration tecnhique, Septembre 2022, page 22.
         let frnic_contact = frnic_contact_create_physical_person("Michel");
         let object = ContactCreate::new(
             "XXX000",
