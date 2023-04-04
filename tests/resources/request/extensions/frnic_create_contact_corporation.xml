@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<epp xmlns="urn:ietf:params:xml:ns:epp-1.0">
+  <command>
+    <create>
+      <create xmlns="urn:ietf:params:xml:ns:contact-1.0">
+        <id>XXXXXXX</id>
+        <postalInfo type="loc">
+          <name>SARL DUPONT</name>
+          <addr>
+            <street>1 Rue des coquelicots</street>
+            <city>Paris</city>
+            <pc>75000</pc>
+            <cc>FR</cc>
+          </addr>
+        </postalInfo>
+        <voice>+33.1234567890</voice>
+        <email>test@test.fr</email>
+        <authInfo>
+          <pw>Afn-123456</pw>
+        </authInfo>
+      </create>
+    </create>
+    <extension>
+      <ext xmlns="http://www.afnic.fr/xml/epp/frnic-2.0">
+        <create>
+          <contact>
+            <legalEntityInfos>
+              <legalStatus s="company" />
+            </legalEntityInfos>
+          </contact>
+        </create>
+      </ext>
+    </extension>
+    <clTRID>cltrid:1626454866</clTRID>
+  </command>
+</epp>
