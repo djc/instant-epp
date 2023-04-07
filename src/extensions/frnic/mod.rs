@@ -1,3 +1,5 @@
+//! Mapping for the [frnic-2.0
+//! extension](https://www.afnic.fr/wp-media/uploads/2022/10/guide_d_integration_technique_EN_FRandoverseasTLD_30_09_VF.pdf)
 use instant_xml::{FromXml, ToXml};
 
 pub mod contact;
@@ -90,7 +92,7 @@ mod tests {
 
     #[test]
     fn contact_create_physical_person() {
-        // Guide d'intégration tecnhique, Septembre 2022, page 22.
+        // Technical Integration Guide, page 23.
         let frnic_contact = frnic_contact_create_physical_person("Michel");
         let object = ContactCreate::new(
             "XXX000",
@@ -118,7 +120,7 @@ mod tests {
 
     #[test]
     fn contact_create_corporation() {
-        // Guide d'intégration tecnhique, Septembre 2022, page 25.
+        // Technical Integration Guide, page 27.
         let frnic_contact = frnic_contact_create_company(None, None, None, None, None);
         let object = ContactCreate::new(
             "XXXXXXX",
@@ -146,7 +148,7 @@ mod tests {
 
     #[test]
     fn contact_create_corporation_with_siren() {
-        // Guide d'intégration tecnhique, Septembre 2022, page 26.
+        // Technical Integration Guide, page 28.
         let frnic_contact = frnic_contact_create_company(Some("123456789"), None, None, None, None);
         let object = ContactCreate::new(
             "XXXX0000",
@@ -174,7 +176,7 @@ mod tests {
 
     #[test]
     fn contact_create_non_profit() {
-        // Guide d'intégration tecnhique, Septembre 2022, page 33.
+        // Technical Integration Guide, page 38.
         let frnic_contact = frnic_contact_create_non_profit(
             None,
             Some("2011-05-02"),
