@@ -35,7 +35,6 @@ pub struct FrnicContactCreateCorporation<'a> {
 #[derive(Debug, ToXml)]
 #[xml(rename = "legalEntityInfos", ns(XMLNS))]
 pub struct LegalEntityInfos<'a> {
-    #[xml(rename = "legalStatus")]
     pub legal_status: LegalStatus<'a>,
     pub siren: Option<Cow<'a, str>>,
     pub vat: Option<Cow<'a, str>>,
@@ -55,24 +54,24 @@ pub enum LegalStatus<'a> {
 impl<'a> ToXml for LegalStatus<'a> {
     fn serialize<W: core::fmt::Write + ?Sized>(
         &self,
-        field: Option<Id<'_>>,
+        _field: Option<Id<'_>>,
         serializer: &mut instant_xml::Serializer<W>,
     ) -> Result<(), instant_xml::Error> {
-        let field = field.expect("field for LegalStatus has a name");
+        let ncname = "legalStatus";
         let (s, data) = match self {
-            LegalStatus::Company => ("company", ""),
-            LegalStatus::NonProfit => ("association", ""),
-            LegalStatus::Other(data) => ("other", data.as_ref()),
+            LegalStatus::Company => ("company", None),
+            LegalStatus::NonProfit => ("association", None),
+            LegalStatus::Other(text) => ("other", Some(&text.as_ref()[2..])),
         };
-        let prefix = serializer.write_start(field.name, field.ns)?;
+        let prefix = serializer.write_start(ncname, XMLNS)?;
         debug_assert_eq!(prefix, None);
         serializer.write_attr("s", XMLNS, s)?;
-        if data.is_empty() {
-            serializer.end_empty()?;
-        } else {
+        if let Some(text) = data {
             serializer.end_start()?;
-            data.serialize(None, serializer)?;
-            serializer.write_close(prefix, field.name)?;
+            text.serialize(None, serializer)?;
+            serializer.write_close(prefix, ncname)?;
+        } else {
+            serializer.end_empty()?;
         }
         Ok(())
     }
