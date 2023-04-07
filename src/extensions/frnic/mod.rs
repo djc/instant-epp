@@ -83,9 +83,7 @@ pub fn contact_create_non_profit<'a>(
 #[cfg(test)]
 mod tests {
     use super::{
-        contact::Publication,
-        contact_create_company,
-        contact_create_non_profit,
+        contact::Publication, contact_create_company, contact_create_non_profit,
         contact_create_physical_person,
     };
     use crate::contact::create::ContactCreate;
