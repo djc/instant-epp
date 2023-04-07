@@ -18,28 +18,28 @@ pub struct Create<T> {
     pub data: T,
 }
 
-pub fn frnic_contact_create_physical_person(
+pub fn contact_create_physical_person(
     first_name: &str,
-) -> Ext<Create<contact::FrnicContactCreatePp<'_>>> {
+) -> Ext<Create<contact::ContactCreatePp<'_>>> {
     Ext {
         data: Create {
-            data: contact::FrnicContactCreatePp {
+            data: contact::ContactCreatePp {
                 first_name: first_name.into(),
             },
         },
     }
 }
 
-pub fn frnic_contact_create_company<'a>(
+pub fn contact_create_company<'a>(
     siren: Option<&'a str>,
     vat: Option<&'a str>,
     trademark: Option<&'a str>,
     duns: Option<&'a str>,
     local: Option<&'a str>,
-) -> Ext<Create<contact::FrnicContactCreateCorporation<'a>>> {
+) -> Ext<Create<contact::ContactCreateCorporation<'a>>> {
     Ext {
         data: Create {
-            data: contact::FrnicContactCreateCorporation {
+            data: contact::ContactCreateCorporation {
                 legal_entity: contact::LegalEntityInfos {
                     legal_status: contact::LegalStatus::Company,
                     siren: siren.map(|s| s.into()),
@@ -54,14 +54,14 @@ pub fn frnic_contact_create_company<'a>(
     }
 }
 
-pub fn frnic_contact_create_non_profit<'a>(
+pub fn contact_create_non_profit<'a>(
     waldec: Option<&'a str>,
     decl: Option<&'a str>,
     publication: Option<contact::Publication<'a>>,
-) -> Ext<Create<contact::FrnicContactCreateCorporation<'a>>> {
+) -> Ext<Create<contact::ContactCreateCorporation<'a>>> {
     Ext {
         data: Create {
-            data: contact::FrnicContactCreateCorporation {
+            data: contact::ContactCreateCorporation {
                 legal_entity: contact::LegalEntityInfos {
                     legal_status: contact::LegalStatus::NonProfit,
                     siren: None,
@@ -83,17 +83,19 @@ pub fn frnic_contact_create_non_profit<'a>(
 #[cfg(test)]
 mod tests {
     use super::{
-        contact::Publication, frnic_contact_create_company, frnic_contact_create_non_profit,
-        frnic_contact_create_physical_person,
+        contact::Publication,
+        contact_create_company,
+        contact_create_non_profit,
+        contact_create_physical_person,
     };
     use crate::contact::create::ContactCreate;
     use crate::contact::{Address, PostalInfo, Voice};
     use crate::tests::assert_serialized;
 
     #[test]
-    fn contact_create_physical_person() {
+    fn test_contact_create_physical_person() {
         // Technical Integration Guide, page 23.
-        let frnic_contact = frnic_contact_create_physical_person("Michel");
+        let frnic_contact = contact_create_physical_person("Michel");
         let object = ContactCreate::new(
             "XXX000",
             "test@test.fr",
@@ -119,9 +121,9 @@ mod tests {
     }
 
     #[test]
-    fn contact_create_corporation() {
+    fn test_contact_create_corporation() {
         // Technical Integration Guide, page 27.
-        let frnic_contact = frnic_contact_create_company(None, None, None, None, None);
+        let frnic_contact = contact_create_company(None, None, None, None, None);
         let object = ContactCreate::new(
             "XXXXXXX",
             "test@test.fr",
@@ -147,9 +149,9 @@ mod tests {
     }
 
     #[test]
-    fn contact_create_corporation_with_siren() {
+    fn test_contact_create_corporation_with_siren() {
         // Technical Integration Guide, page 28.
-        let frnic_contact = frnic_contact_create_company(Some("123456789"), None, None, None, None);
+        let frnic_contact = contact_create_company(Some("123456789"), None, None, None, None);
         let object = ContactCreate::new(
             "XXXX0000",
             "test@test.fr",
@@ -175,9 +177,9 @@ mod tests {
     }
 
     #[test]
-    fn contact_create_non_profit() {
+    fn test_contact_create_non_profit() {
         // Technical Integration Guide, page 38.
-        let frnic_contact = frnic_contact_create_non_profit(
+        let frnic_contact = contact_create_non_profit(
             None,
             Some("2011-05-02"),
             Some(Publication {

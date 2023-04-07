@@ -7,28 +7,28 @@ use crate::request::{Extension, Transaction};
 
 use super::{Create, Ext, XMLNS};
 
-impl<'a> Transaction<Ext<Create<FrnicContactCreatePp<'a>>>> for ContactCreate<'a> {}
+impl<'a> Transaction<Ext<Create<ContactCreatePp<'a>>>> for ContactCreate<'a> {}
 
-impl<'a> Extension for Ext<Create<FrnicContactCreatePp<'a>>> {
+impl<'a> Extension for Ext<Create<ContactCreatePp<'a>>> {
     type Response = ();
 }
 
 #[derive(Debug, FromXml, ToXml)]
 #[xml(rename = "contact", ns(XMLNS))]
-pub struct FrnicContactCreatePp<'a> {
+pub struct ContactCreatePp<'a> {
     #[xml(rename = "firstName")]
     pub first_name: Cow<'a, str>,
 }
 
-impl<'a> Transaction<Ext<Create<FrnicContactCreateCorporation<'a>>>> for ContactCreate<'a> {}
+impl<'a> Transaction<Ext<Create<ContactCreateCorporation<'a>>>> for ContactCreate<'a> {}
 
-impl<'a> Extension for Ext<Create<FrnicContactCreateCorporation<'a>>> {
+impl<'a> Extension for Ext<Create<ContactCreateCorporation<'a>>> {
     type Response = ();
 }
 
 #[derive(Debug, ToXml)]
 #[xml(rename = "contact", ns(XMLNS))]
-pub struct FrnicContactCreateCorporation<'a> {
+pub struct ContactCreateCorporation<'a> {
     pub legal_entity: LegalEntityInfos<'a>,
 }
 
