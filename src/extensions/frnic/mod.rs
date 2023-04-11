@@ -67,7 +67,7 @@ pub fn contact_create_non_profit<'a>(
                     siren: None,
                     vat: None,
                     trademark: None,
-                    asso: Some(contact::Asso {
+                    asso: Some(contact::Association {
                         waldec: waldec.map(|w| w.into()),
                         decl: decl.map(|d| d.into()),
                         publ: publication,

@@ -39,7 +39,7 @@ pub struct LegalEntityInfos<'a> {
     pub siren: Option<Cow<'a, str>>,
     pub vat: Option<Cow<'a, str>>,
     pub trademark: Option<Cow<'a, str>>,
-    pub asso: Option<Asso<'a>>,
+    pub asso: Option<Association<'a>>,
     pub duns: Option<Cow<'a, str>>,
     pub local: Option<Cow<'a, str>>,
 }
@@ -79,7 +79,7 @@ impl<'a> ToXml for LegalStatus<'a> {
 
 #[derive(Debug, ToXml)]
 #[xml(rename = "asso", ns(XMLNS))]
-pub struct Asso<'a> {
+pub struct Association<'a> {
     pub waldec: Option<Cow<'a, str>>,
     pub decl: Option<Cow<'a, str>>,
     pub publ: Option<Publication<'a>>,
