@@ -19,6 +19,60 @@ pub enum CreateData<'a> {
     LegalEntity(Box<LegalEntityInfos<'a>>),
 }
 
+impl<'a> From<CreateData<'a>> for Ext<Create<CreateData<'a>>> {
+    fn from(data: CreateData<'a>) -> Self {
+        Ext {
+            data: Create { data },
+        }
+    }
+}
+
+impl<'a> CreateData<'a> {
+    pub fn new_natural_person(first_name: &'a str) -> Self {
+        Self::NaturalPerson {
+            first_name: first_name.into(),
+        }
+    }
+
+    pub fn new_company(
+        siren: Option<&'a str>,
+        vat: Option<&'a str>,
+        trademark: Option<&'a str>,
+        duns: Option<&'a str>,
+        local: Option<&'a str>,
+    ) -> Self {
+        Self::LegalEntity(Box::new(LegalEntityInfos {
+            legal_status: LegalStatus::Company,
+            siren: siren.map(|s| s.into()),
+            vat: vat.map(|v| v.into()),
+            trademark: trademark.map(|t| t.into()),
+            asso: None,
+            duns: duns.map(|d| d.into()),
+            local: local.map(|l| l.into()),
+        }))
+    }
+
+    pub fn new_non_profit(
+        waldec: Option<&'a str>,
+        decl: Option<&'a str>,
+        publication: Option<Publication<'a>>,
+    ) -> Self {
+        Self::LegalEntity(Box::new(LegalEntityInfos {
+            legal_status: LegalStatus::Association,
+            siren: None,
+            vat: None,
+            trademark: None,
+            asso: Some(Association {
+                waldec: waldec.map(|w| w.into()),
+                decl: decl.map(|d| d.into()),
+                publ: publication,
+            }),
+            duns: None,
+            local: None,
+        }))
+    }
+}
+
 impl<'a> ToXml for CreateData<'a> {
     fn serialize<W: core::fmt::Write + ?Sized>(
         &self,

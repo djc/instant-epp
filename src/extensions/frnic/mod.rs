@@ -18,68 +18,9 @@ pub struct Create<T> {
     pub data: T,
 }
 
-pub fn contact_create_natural_person(first_name: &str) -> Ext<Create<contact::CreateData<'_>>> {
-    Ext {
-        data: Create {
-            data: contact::CreateData::NaturalPerson {
-                first_name: first_name.into(),
-            },
-        },
-    }
-}
-
-pub fn contact_create_company<'a>(
-    siren: Option<&'a str>,
-    vat: Option<&'a str>,
-    trademark: Option<&'a str>,
-    duns: Option<&'a str>,
-    local: Option<&'a str>,
-) -> Ext<Create<contact::CreateData<'a>>> {
-    Ext {
-        data: Create {
-            data: contact::CreateData::LegalEntity(Box::new(contact::LegalEntityInfos {
-                legal_status: contact::LegalStatus::Company,
-                siren: siren.map(|s| s.into()),
-                vat: vat.map(|v| v.into()),
-                trademark: trademark.map(|t| t.into()),
-                asso: None,
-                duns: duns.map(|d| d.into()),
-                local: local.map(|l| l.into()),
-            })),
-        },
-    }
-}
-
-pub fn contact_create_non_profit<'a>(
-    waldec: Option<&'a str>,
-    decl: Option<&'a str>,
-    publication: Option<contact::Publication<'a>>,
-) -> Ext<Create<contact::CreateData<'a>>> {
-    Ext {
-        data: Create {
-            data: contact::CreateData::LegalEntity(Box::new(contact::LegalEntityInfos {
-                legal_status: contact::LegalStatus::Association,
-                siren: None,
-                vat: None,
-                trademark: None,
-                asso: Some(contact::Association {
-                    waldec: waldec.map(|w| w.into()),
-                    decl: decl.map(|d| d.into()),
-                    publ: publication,
-                }),
-                duns: None,
-                local: None,
-            })),
-        },
-    }
-}
-
 #[cfg(test)]
 mod tests {
-    use super::{
-        contact::Publication, contact_create_company, contact_create_natural_person,
-        contact_create_non_profit,
-    };
+    use super::{contact, Ext};
     use crate::contact::create::ContactCreate;
     use crate::contact::{Address, PostalInfo, Voice};
     use crate::tests::assert_serialized;
@@ -87,7 +28,7 @@ mod tests {
     #[test]
     fn test_contact_create_natural_person() {
         // Technical Integration Guide, page 23.
-        let frnic_contact = contact_create_natural_person("Michel");
+        let frnic_contact = Ext::from(contact::CreateData::new_natural_person("Michel"));
         let object = ContactCreate::new(
             "XXX000",
             "test@test.fr",
@@ -107,15 +48,17 @@ mod tests {
             "Afn-12345678",
         );
         assert_serialized(
-            "request/extensions/frnic_create_contact_physical_person.xml",
+            "request/extensions/frnic_create_contact_natural_person.xml",
             (&object, &frnic_contact),
         );
     }
 
     #[test]
-    fn test_contact_create_corporation() {
+    fn test_contact_create_company() {
         // Technical Integration Guide, page 27.
-        let frnic_contact = contact_create_company(None, None, None, None, None);
+        let frnic_contact = Ext::from(contact::CreateData::new_company(
+            None, None, None, None, None,
+        ));
         let object = ContactCreate::new(
             "XXXXXXX",
             "test@test.fr",
@@ -135,7 +78,7 @@ mod tests {
             "Afn-123456",
         );
         assert_serialized(
-            "request/extensions/frnic_create_contact_corporation.xml",
+            "request/extensions/frnic_create_contact_company.xml",
             (&object, &frnic_contact),
         );
     }
@@ -143,7 +86,13 @@ mod tests {
     #[test]
     fn test_contact_create_corporation_with_siren() {
         // Technical Integration Guide, page 28.
-        let frnic_contact = contact_create_company(Some("123456789"), None, None, None, None);
+        let frnic_contact = Ext::from(contact::CreateData::new_company(
+            Some("123456789"),
+            None,
+            None,
+            None,
+            None,
+        ));
         let object = ContactCreate::new(
             "XXXX0000",
             "test@test.fr",
@@ -171,15 +120,15 @@ mod tests {
     #[test]
     fn test_contact_create_non_profit() {
         // Technical Integration Guide, page 38.
-        let frnic_contact = contact_create_non_profit(
+        let frnic_contact = Ext::from(contact::CreateData::new_non_profit(
             None,
             Some("2011-05-02"),
-            Some(Publication {
+            Some(contact::Publication {
                 announce: 123456,
                 page: 15,
                 date: "2011-05-07".into(),
             }),
-        );
+        ));
         let object = ContactCreate::new(
             "XXXX0000",
             "test@test.fr",
