@@ -159,7 +159,7 @@ pub struct Association<'a> {
     /// déclarées](https://www.associations.gouv.fr/le-rna-repertoire-national-des-associations.html)"
     pub waldec: Option<Cow<'a, str>>,
     /// Date of declaration to the prefecture
-    #[xml(rename="decl")]
+    #[xml(rename = "decl")]
     pub declaration: Option<Cow<'a, str>>,
     /// Information of publication in the official gazette
     #[xml(rename = "publ")]
