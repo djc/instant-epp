@@ -4,6 +4,8 @@ use instant_xml::{FromXml, ToXml};
 
 pub mod contact;
 
+pub use contact::ContactCreate;
+
 pub const XMLNS: &str = "http://www.afnic.fr/xml/epp/frnic-2.0";
 
 #[derive(Debug, FromXml, ToXml)]
@@ -20,15 +22,16 @@ pub struct Create<T> {
 
 #[cfg(test)]
 mod tests {
-    use super::{contact, Ext};
-    use crate::contact::create::ContactCreate;
+    use crate::contact::ContactCreate;
     use crate::contact::{Address, PostalInfo, Voice};
+    use crate::extensions::frnic;
     use crate::tests::assert_serialized;
+    use frnic::{contact, Ext};
 
     #[test]
     fn test_contact_create_natural_person() {
         // Technical Integration Guide, page 23.
-        let frnic_contact = Ext::from(contact::CreateData::new_natural_person("Michel"));
+        let frnic_contact = Ext::from(frnic::ContactCreate::new_natural_person("Michel"));
         let object = ContactCreate::new(
             "XXX000",
             "test@test.fr",
@@ -56,7 +59,7 @@ mod tests {
     #[test]
     fn test_contact_create_company() {
         // Technical Integration Guide, page 27.
-        let frnic_contact = Ext::from(contact::CreateData::new_company(
+        let frnic_contact = Ext::from(frnic::ContactCreate::new_company(
             None, None, None, None, None,
         ));
         let object = ContactCreate::new(
@@ -86,7 +89,7 @@ mod tests {
     #[test]
     fn test_contact_create_corporation_with_siren() {
         // Technical Integration Guide, page 28.
-        let frnic_contact = Ext::from(contact::CreateData::new_company(
+        let frnic_contact = Ext::from(frnic::ContactCreate::new_company(
             Some("123456789"),
             None,
             None,
@@ -120,7 +123,7 @@ mod tests {
     #[test]
     fn test_contact_create_non_profit() {
         // Technical Integration Guide, page 38.
-        let frnic_contact = Ext::from(contact::CreateData::new_non_profit(
+        let frnic_contact = Ext::from(frnic::ContactCreate::new_non_profit(
             None,
             Some("2011-05-02"),
             Some(contact::Publication {

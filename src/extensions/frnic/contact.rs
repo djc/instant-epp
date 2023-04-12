@@ -2,32 +2,40 @@
 use instant_xml::{Id, ToXml};
 use std::borrow::Cow;
 
-use crate::contact::create::ContactCreate;
 use crate::request::{Extension, Transaction};
 
 use super::{Create, Ext, XMLNS};
 
-impl<'a> Transaction<Ext<Create<CreateData<'a>>>> for ContactCreate<'a> {}
+impl<'a> Transaction<Ext<Create<ContactCreate<'a>>>> for crate::contact::create::ContactCreate<'a> {}
 
-impl<'a> Extension for Ext<Create<CreateData<'a>>> {
+impl<'a> Extension for Ext<Create<ContactCreate<'a>>> {
     type Response = ();
 }
 
+/// For french TLDs, a contact is either an individual (PP) or a legal
+/// entity (PM). We use the `ContactCreate` extension to differentiate
+/// between the creation of a PP and a PM.
 #[derive(Debug)]
-pub enum CreateData<'a> {
-    NaturalPerson { first_name: Cow<'a, str> },
+pub enum ContactCreate<'a> {
+    /// This contact is an individual.
+    NaturalPerson {
+        /// First name of the contact. The `<contact:name>` element
+        /// will be the family name.
+        first_name: Cow<'a, str>,
+    },
+    /// This contact is a legal entity.
     LegalEntity(Box<LegalEntityInfos<'a>>),
 }
 
-impl<'a> From<CreateData<'a>> for Ext<Create<CreateData<'a>>> {
-    fn from(data: CreateData<'a>) -> Self {
+impl<'a> From<ContactCreate<'a>> for Ext<Create<ContactCreate<'a>>> {
+    fn from(data: ContactCreate<'a>) -> Self {
         Ext {
             data: Create { data },
         }
     }
 }
 
-impl<'a> CreateData<'a> {
+impl<'a> ContactCreate<'a> {
     pub fn new_natural_person(first_name: &'a str) -> Self {
         Self::NaturalPerson {
             first_name: first_name.into(),
@@ -73,7 +81,7 @@ impl<'a> CreateData<'a> {
     }
 }
 
-impl<'a> ToXml for CreateData<'a> {
+impl<'a> ToXml for ContactCreate<'a> {
     fn serialize<W: core::fmt::Write + ?Sized>(
         &self,
         _: Option<Id<'_>>,
