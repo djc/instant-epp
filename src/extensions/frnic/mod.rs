@@ -37,7 +37,7 @@ pub fn contact_create_company<'a>(
 ) -> Ext<Create<contact::CreateData<'a>>> {
     Ext {
         data: Create {
-            data: contact::CreateData::LegalEntity(contact::LegalEntityInfos {
+            data: contact::CreateData::LegalEntity(Box::new(contact::LegalEntityInfos {
                 legal_status: contact::LegalStatus::Company,
                 siren: siren.map(|s| s.into()),
                 vat: vat.map(|v| v.into()),
@@ -45,7 +45,7 @@ pub fn contact_create_company<'a>(
                 asso: None,
                 duns: duns.map(|d| d.into()),
                 local: local.map(|l| l.into()),
-            }),
+            })),
         },
     }
 }
@@ -57,7 +57,7 @@ pub fn contact_create_non_profit<'a>(
 ) -> Ext<Create<contact::CreateData<'a>>> {
     Ext {
         data: Create {
-            data: contact::CreateData::LegalEntity(contact::LegalEntityInfos {
+            data: contact::CreateData::LegalEntity(Box::new(contact::LegalEntityInfos {
                 legal_status: contact::LegalStatus::Association,
                 siren: None,
                 vat: None,
@@ -69,7 +69,7 @@ pub fn contact_create_non_profit<'a>(
                 }),
                 duns: None,
                 local: None,
-            }),
+            })),
         },
     }
 }

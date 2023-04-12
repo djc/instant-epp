@@ -16,7 +16,7 @@ impl<'a> Extension for Ext<Create<CreateData<'a>>> {
 #[derive(Debug)]
 pub enum CreateData<'a> {
     NaturalPerson { first_name: Cow<'a, str> },
-    LegalEntity(LegalEntityInfos<'a>),
+    LegalEntity(Box<LegalEntityInfos<'a>>),
 }
 
 impl<'a> ToXml for CreateData<'a> {
