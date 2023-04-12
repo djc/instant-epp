@@ -18,12 +18,10 @@ pub struct Create<T> {
     pub data: T,
 }
 
-pub fn contact_create_physical_person(
-    first_name: &str,
-) -> Ext<Create<contact::ContactCreatePp<'_>>> {
+pub fn contact_create_natural_person(first_name: &str) -> Ext<Create<contact::CreateData<'_>>> {
     Ext {
         data: Create {
-            data: contact::ContactCreatePp {
+            data: contact::CreateData::NaturalPerson {
                 first_name: first_name.into(),
             },
         },
@@ -36,20 +34,18 @@ pub fn contact_create_company<'a>(
     trademark: Option<&'a str>,
     duns: Option<&'a str>,
     local: Option<&'a str>,
-) -> Ext<Create<contact::ContactCreateCorporation<'a>>> {
+) -> Ext<Create<contact::CreateData<'a>>> {
     Ext {
         data: Create {
-            data: contact::ContactCreateCorporation {
-                legal_entity: contact::LegalEntityInfos {
-                    legal_status: contact::LegalStatus::Company,
-                    siren: siren.map(|s| s.into()),
-                    vat: vat.map(|v| v.into()),
-                    trademark: trademark.map(|t| t.into()),
-                    asso: None,
-                    duns: duns.map(|d| d.into()),
-                    local: local.map(|l| l.into()),
-                },
-            },
+            data: contact::CreateData::LegalEntity(contact::LegalEntityInfos {
+                legal_status: contact::LegalStatus::Company,
+                siren: siren.map(|s| s.into()),
+                vat: vat.map(|v| v.into()),
+                trademark: trademark.map(|t| t.into()),
+                asso: None,
+                duns: duns.map(|d| d.into()),
+                local: local.map(|l| l.into()),
+            }),
         },
     }
 }
@@ -58,24 +54,22 @@ pub fn contact_create_non_profit<'a>(
     waldec: Option<&'a str>,
     decl: Option<&'a str>,
     publication: Option<contact::Publication<'a>>,
-) -> Ext<Create<contact::ContactCreateCorporation<'a>>> {
+) -> Ext<Create<contact::CreateData<'a>>> {
     Ext {
         data: Create {
-            data: contact::ContactCreateCorporation {
-                legal_entity: contact::LegalEntityInfos {
-                    legal_status: contact::LegalStatus::NonProfit,
-                    siren: None,
-                    vat: None,
-                    trademark: None,
-                    asso: Some(contact::Association {
-                        waldec: waldec.map(|w| w.into()),
-                        decl: decl.map(|d| d.into()),
-                        publ: publication,
-                    }),
-                    duns: None,
-                    local: None,
-                },
-            },
+            data: contact::CreateData::LegalEntity(contact::LegalEntityInfos {
+                legal_status: contact::LegalStatus::Association,
+                siren: None,
+                vat: None,
+                trademark: None,
+                asso: Some(contact::Association {
+                    waldec: waldec.map(|w| w.into()),
+                    decl: decl.map(|d| d.into()),
+                    publ: publication,
+                }),
+                duns: None,
+                local: None,
+            }),
         },
     }
 }
@@ -83,17 +77,17 @@ pub fn contact_create_non_profit<'a>(
 #[cfg(test)]
 mod tests {
     use super::{
-        contact::Publication, contact_create_company, contact_create_non_profit,
-        contact_create_physical_person,
+        contact::Publication, contact_create_company, contact_create_natural_person,
+        contact_create_non_profit,
     };
     use crate::contact::create::ContactCreate;
     use crate::contact::{Address, PostalInfo, Voice};
     use crate::tests::assert_serialized;
 
     #[test]
-    fn test_contact_create_physical_person() {
+    fn test_contact_create_natural_person() {
         // Technical Integration Guide, page 23.
-        let frnic_contact = contact_create_physical_person("Michel");
+        let frnic_contact = contact_create_natural_person("Michel");
         let object = ContactCreate::new(
             "XXX000",
             "test@test.fr",

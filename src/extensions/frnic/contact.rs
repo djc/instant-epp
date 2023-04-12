@@ -1,5 +1,5 @@
 //! Types for EPP FRNIC contact requests
-use instant_xml::{FromXml, Id, ToXml};
+use instant_xml::{Id, ToXml};
 use std::borrow::Cow;
 
 use crate::contact::create::ContactCreate;
@@ -7,29 +7,40 @@ use crate::request::{Extension, Transaction};
 
 use super::{Create, Ext, XMLNS};
 
-impl<'a> Transaction<Ext<Create<ContactCreatePp<'a>>>> for ContactCreate<'a> {}
+impl<'a> Transaction<Ext<Create<CreateData<'a>>>> for ContactCreate<'a> {}
 
-impl<'a> Extension for Ext<Create<ContactCreatePp<'a>>> {
+impl<'a> Extension for Ext<Create<CreateData<'a>>> {
     type Response = ();
 }
 
-#[derive(Debug, FromXml, ToXml)]
-#[xml(rename = "contact", ns(XMLNS))]
-pub struct ContactCreatePp<'a> {
-    #[xml(rename = "firstName")]
-    pub first_name: Cow<'a, str>,
+#[derive(Debug)]
+pub enum CreateData<'a> {
+    NaturalPerson { first_name: Cow<'a, str> },
+    LegalEntity(LegalEntityInfos<'a>),
 }
 
-impl<'a> Transaction<Ext<Create<ContactCreateCorporation<'a>>>> for ContactCreate<'a> {}
-
-impl<'a> Extension for Ext<Create<ContactCreateCorporation<'a>>> {
-    type Response = ();
-}
-
-#[derive(Debug, ToXml)]
-#[xml(rename = "contact", ns(XMLNS))]
-pub struct ContactCreateCorporation<'a> {
-    pub legal_entity: LegalEntityInfos<'a>,
+impl<'a> ToXml for CreateData<'a> {
+    fn serialize<W: core::fmt::Write + ?Sized>(
+        &self,
+        _: Option<Id<'_>>,
+        serializer: &mut instant_xml::Serializer<'_, W>,
+    ) -> Result<(), instant_xml::Error> {
+        let contact_nc_name = "contact";
+        let prefix = serializer.write_start(contact_nc_name, XMLNS)?;
+        serializer.end_start()?;
+        match self {
+            Self::NaturalPerson { first_name } => {
+                let first_name_nc_name = "firstName";
+                let prefix = serializer.write_start(first_name_nc_name, XMLNS)?;
+                serializer.end_start()?;
+                first_name.serialize(None, serializer)?;
+                serializer.write_close(prefix, first_name_nc_name)?;
+            }
+            Self::LegalEntity(infos) => infos.serialize(None, serializer)?,
+        }
+        serializer.write_close(prefix, contact_nc_name)?;
+        Ok(())
+    }
 }
 
 #[derive(Debug, ToXml)]
@@ -47,7 +58,7 @@ pub struct LegalEntityInfos<'a> {
 #[derive(Debug)]
 pub enum LegalStatus<'a> {
     Company,
-    NonProfit,
+    Association,
     Other(Cow<'a, str>),
 }
 
@@ -60,7 +71,7 @@ impl<'a> ToXml for LegalStatus<'a> {
         let ncname = "legalStatus";
         let (s, data) = match self {
             LegalStatus::Company => ("company", None),
-            LegalStatus::NonProfit => ("association", None),
+            LegalStatus::Association => ("association", None),
             LegalStatus::Other(text) => ("other", Some(&text.as_ref()[2..])),
         };
         let prefix = serializer.write_start(ncname, XMLNS)?;
