@@ -54,7 +54,7 @@ impl<'a> CreateData<'a> {
 
     pub fn new_non_profit(
         waldec: Option<&'a str>,
-        decl: Option<&'a str>,
+        declaration: Option<&'a str>,
         publication: Option<Publication<'a>>,
     ) -> Self {
         Self::LegalEntity(Box::new(LegalEntityInfos {
@@ -64,8 +64,8 @@ impl<'a> CreateData<'a> {
             trademark: None,
             asso: Some(Association {
                 waldec: waldec.map(|w| w.into()),
-                decl: decl.map(|d| d.into()),
-                publ: publication,
+                declaration: declaration.map(|d| d.into()),
+                publication,
             }),
             duns: None,
             local: None,
@@ -142,21 +142,34 @@ impl<'a> ToXml for LegalStatus<'a> {
     }
 }
 
+/// Contains information that permits the identification of associations.
 #[derive(Debug, ToXml)]
 #[xml(rename = "asso", ns(XMLNS))]
 pub struct Association<'a> {
+    /// The Waldec registration number. "Waldec" is the acronym for
+    /// the french "[Web des associations librement
+    /// déclarées](https://www.associations.gouv.fr/le-rna-repertoire-national-des-associations.html)"
     pub waldec: Option<Cow<'a, str>>,
-    pub decl: Option<Cow<'a, str>>,
-    pub publ: Option<Publication<'a>>,
+    /// Date of declaration to the prefecture
+    #[xml(rename="decl")]
+    pub declaration: Option<Cow<'a, str>>,
+    /// Information of publication in the official gazette
+    #[xml(rename = "publ")]
+    pub publication: Option<Publication<'a>>,
 }
 
+/// Holds information about the publication in the
+/// official gazette for the association.
 #[derive(Debug, ToXml)]
 #[xml(rename = "publ", ns(XMLNS))]
 pub struct Publication<'a> {
+    /// Page number of the announcement
     #[xml(attribute)]
     pub page: u32,
     #[xml(attribute)]
+    /// Number of the announcement
     pub announce: u32,
+    /// Date of publication
     #[xml(direct)]
     pub date: Cow<'a, str>,
 }
