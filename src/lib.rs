@@ -33,6 +33,7 @@
 //! on that type for more information.
 
 #![warn(unreachable_pub)]
+#![warn(clippy::use_self)]
 
 pub mod client;
 pub mod common;

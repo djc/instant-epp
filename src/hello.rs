@@ -50,7 +50,7 @@ impl<'xml> FromXml<'xml> for ServiceMenu {
             None => return Ok(()),
         };
 
-        *into = Some(ServiceMenu {
+        *into = Some(Self {
             options: Options {
                 version: flattened.version.into(),
                 lang: flattened.lang.into(),

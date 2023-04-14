@@ -29,7 +29,7 @@ impl<'xml> FromXml<'xml> for NoExtension {
 }
 
 impl Extension for NoExtension {
-    type Response = NoExtension;
+    type Response = Self;
 }
 
 /// The `<option>` type in EPP XML login requests
