@@ -61,6 +61,8 @@ pub mod extensions {
 
         pub const XMLNS: &str = "urn:ietf:params:xml:ns:rgp-1.0";
     }
+
+    pub mod frnic;
 }
 
 pub use client::EppClient;
