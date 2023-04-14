@@ -24,12 +24,12 @@ pub struct ServiceMenu {
 #[derive(Debug, FromXml, PartialEq)]
 #[xml(ns(EPP_XMLNS), rename = "svcMenu")]
 struct FlattenedServiceMenu {
-    pub version: String,
-    pub lang: String,
+    version: String,
+    lang: String,
     #[xml(rename = "objURI")]
-    pub obj_uris: Vec<String>,
+    obj_uris: Vec<String>,
     #[xml(rename = "svcExtension")]
-    pub svc_ext: Option<ServiceExtension<'static>>,
+    svc_ext: Option<ServiceExtension<'static>>,
 }
 
 impl<'xml> FromXml<'xml> for ServiceMenu {

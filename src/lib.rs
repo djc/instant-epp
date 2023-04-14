@@ -32,6 +32,8 @@
 //! You will usually want to start by initializing an [`EppClient`]. Refer to the example code
 //! on that type for more information.
 
+#![warn(unreachable_pub)]
+
 pub mod client;
 pub mod common;
 pub mod connection;

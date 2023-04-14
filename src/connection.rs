@@ -16,10 +16,10 @@ use crate::error::Error;
 
 /// EPP Connection struct with some metadata for the connection
 pub(crate) struct EppConnection<C: Connector> {
-    pub registry: String,
+    pub(crate) registry: String,
     connector: C,
     stream: C::Connection,
-    pub greeting: String,
+    pub(crate) greeting: String,
     timeout: Duration,
     // A request that is currently in flight
     //
