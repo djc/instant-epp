@@ -172,7 +172,7 @@ impl Period {
 
     fn new(length: u8, unit: char) -> Result<Self, Error> {
         match length {
-            1..=99 => Ok(Period { length, unit }),
+            1..=99 => Ok(Self { length, unit }),
             0 | 100.. => Err(Error::Other(
                 "Period length must be greater than 0 and less than 100".into(),
             )),
@@ -316,23 +316,23 @@ impl<'xml> FromXml<'xml> for Status {
         }
 
         *into = Some(match attr.value {
-            "clientDeleteProhibited" => Status::ClientDeleteProhibited,
-            "serverDeleteProhibited" => Status::ServerDeleteProhibited,
-            "clientHold" => Status::ClientHold,
-            "serverHold" => Status::ServerHold,
-            "clientRenewProhibited" => Status::ClientRenewProhibited,
-            "serverRenewProhibited" => Status::ServerRenewProhibited,
-            "clientTransferProhibited" => Status::ClientTransferProhibited,
-            "serverTransferProhibited" => Status::ServerTransferProhibited,
-            "clientUpdateProhibited" => Status::ClientUpdateProhibited,
-            "serverUpdateProhibited" => Status::ServerUpdateProhibited,
-            "inactive" => Status::Inactive,
-            "ok" => Status::Ok,
-            "pendingCreate" => Status::PendingCreate,
-            "pendingDelete" => Status::PendingDelete,
-            "pendingRenew" => Status::PendingRenew,
-            "pendingTransfer" => Status::PendingTransfer,
-            "pendingUpdate" => Status::PendingUpdate,
+            "clientDeleteProhibited" => Self::ClientDeleteProhibited,
+            "serverDeleteProhibited" => Self::ServerDeleteProhibited,
+            "clientHold" => Self::ClientHold,
+            "serverHold" => Self::ServerHold,
+            "clientRenewProhibited" => Self::ClientRenewProhibited,
+            "serverRenewProhibited" => Self::ServerRenewProhibited,
+            "clientTransferProhibited" => Self::ClientTransferProhibited,
+            "serverTransferProhibited" => Self::ServerTransferProhibited,
+            "clientUpdateProhibited" => Self::ClientUpdateProhibited,
+            "serverUpdateProhibited" => Self::ServerUpdateProhibited,
+            "inactive" => Self::Inactive,
+            "ok" => Self::Ok,
+            "pendingCreate" => Self::PendingCreate,
+            "pendingDelete" => Self::PendingDelete,
+            "pendingRenew" => Self::PendingRenew,
+            "pendingTransfer" => Self::PendingTransfer,
+            "pendingUpdate" => Self::PendingUpdate,
             val => return Err(Error::UnexpectedValue(format!("invalid status {val:?}"))),
         });
 
@@ -340,6 +340,6 @@ impl<'xml> FromXml<'xml> for Status {
         Ok(())
     }
 
-    type Accumulator = Option<Status>;
+    type Accumulator = Option<Self>;
     const KIND: instant_xml::Kind = instant_xml::Kind::Element;
 }

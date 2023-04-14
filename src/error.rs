@@ -25,13 +25,13 @@ impl StdError for Error {}
 impl Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Error::Command(e) => {
+            Self::Command(e) => {
                 write!(f, "command error: {}", e.result.message)
             }
-            Error::Io(e) => write!(f, "I/O error: {e}"),
-            Error::Timeout => write!(f, "timeout"),
-            Error::Xml(e) => write!(f, "(de)serialization error: {e}"),
-            Error::Other(e) => write!(f, "error: {e}"),
+            Self::Io(e) => write!(f, "I/O error: {e}"),
+            Self::Timeout => write!(f, "timeout"),
+            Self::Xml(e) => write!(f, "(de)serialization error: {e}"),
+            Self::Other(e) => write!(f, "error: {e}"),
         }
     }
 }

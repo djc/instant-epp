@@ -51,7 +51,7 @@ impl GMonthDay {
             return Err("Day value within GMonthDay is to big for specified month".to_string());
         }
 
-        Ok(GMonthDay {
+        Ok(Self {
             month,
             day,
             timezone,

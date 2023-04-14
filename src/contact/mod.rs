@@ -302,18 +302,18 @@ impl<'xml> FromXml<'xml> for Status {
         }
 
         *into = Some(match attr.value {
-            "clientDeleteProhibited" => Status::ClientDeleteProhibited,
-            "serverDeleteProhibited" => Status::ServerDeleteProhibited,
-            "clientTransferProhibited" => Status::ClientTransferProhibited,
-            "serverTransferProhibited" => Status::ServerTransferProhibited,
-            "clientUpdateProhibited" => Status::ClientUpdateProhibited,
-            "serverUpdateProhibited" => Status::ServerUpdateProhibited,
-            "linked" => Status::Linked,
-            "ok" => Status::Ok,
-            "pendingCreate" => Status::PendingCreate,
-            "pendingDelete" => Status::PendingDelete,
-            "pendingTransfer" => Status::PendingTransfer,
-            "pendingUpdate" => Status::PendingUpdate,
+            "clientDeleteProhibited" => Self::ClientDeleteProhibited,
+            "serverDeleteProhibited" => Self::ServerDeleteProhibited,
+            "clientTransferProhibited" => Self::ClientTransferProhibited,
+            "serverTransferProhibited" => Self::ServerTransferProhibited,
+            "clientUpdateProhibited" => Self::ClientUpdateProhibited,
+            "serverUpdateProhibited" => Self::ServerUpdateProhibited,
+            "linked" => Self::Linked,
+            "ok" => Self::Ok,
+            "pendingCreate" => Self::PendingCreate,
+            "pendingDelete" => Self::PendingDelete,
+            "pendingTransfer" => Self::PendingTransfer,
+            "pendingUpdate" => Self::PendingUpdate,
             val => return Err(Error::UnexpectedValue(format!("invalid status {val:?}"))),
         });
 
@@ -321,6 +321,6 @@ impl<'xml> FromXml<'xml> for Status {
         Ok(())
     }
 
-    type Accumulator = Option<Status>;
+    type Accumulator = Option<Self>;
     const KIND: instant_xml::Kind = instant_xml::Kind::Element;
 }
