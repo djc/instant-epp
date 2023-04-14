@@ -25,12 +25,12 @@ pub trait Extension: ToXml + Debug {
 /// Type corresponding to the `<command>` tag in an EPP XML request
 /// with an `<extension>` tag
 pub(crate) struct CommandWrapper<'a, D, E> {
-    pub command: &'static str,
+    command: &'static str,
     /// The instance that will be used to populate the `<command>` tag
-    pub data: &'a D,
+    data: &'a D,
     /// The client TRID
-    pub extension: Option<&'a E>,
-    pub client_tr_id: String,
+    extension: Option<&'a E>,
+    client_tr_id: String,
 }
 
 impl<'a, E: Extension, D: Transaction<E>> CommandWrapper<'a, D, E> {

@@ -82,11 +82,11 @@ fn deserialize_host_addrs_option<'xml>(
 /// The `<hostAddr>` types domain or host transactions
 #[derive(Debug, FromXml, ToXml)]
 #[xml(rename = "hostAddr", ns(super::domain::XMLNS))]
-pub(crate) struct HostAddr<'a> {
+struct HostAddr<'a> {
     #[xml(attribute, rename = "ip")]
-    pub ip_version: Option<Cow<'a, str>>,
+    ip_version: Option<Cow<'a, str>>,
     #[xml(direct)]
-    pub address: Cow<'a, str>,
+    address: Cow<'a, str>,
 }
 
 impl From<&IpAddr> for HostAddr<'static> {

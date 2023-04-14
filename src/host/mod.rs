@@ -128,11 +128,11 @@ impl<'xml> FromXml<'xml> for Status {
 /// The `<hostAddr>` types domain or host transactions
 #[derive(Debug, FromXml, ToXml)]
 #[xml(rename = "addr", ns(XMLNS))]
-pub(crate) struct HostAddr<'a> {
+struct HostAddr<'a> {
     #[xml(attribute, rename = "ip")]
-    pub ip_version: Option<Cow<'a, str>>,
+    ip_version: Option<Cow<'a, str>>,
     #[xml(direct)]
-    pub address: Cow<'a, str>,
+    address: Cow<'a, str>,
 }
 
 impl From<&IpAddr> for HostAddr<'static> {
