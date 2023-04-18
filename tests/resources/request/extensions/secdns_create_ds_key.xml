@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<epp xmlns="urn:ietf:params:xml:ns:epp-1.0">
+  <command>
+    <create>
+      <create xmlns="urn:ietf:params:xml:ns:domain-1.0">
+        <name>example.com</name>
+        <period unit="y">2</period>
+        <ns>
+          <hostObj>ns1.example.com</hostObj>
+          <hostObj>ns2.example.com</hostObj>
+        </ns>
+        <registrant>jd1234</registrant>
+        <contact type="admin">sh8013</contact>
+        <contact type="tech">sh8013</contact>
+        <authInfo>
+          <pw>2fooBAR</pw>
+        </authInfo>
+      </create>
+    </create>
+    <extension>
+      <create xmlns="urn:ietf:params:xml:ns:secDNS-1.1">
+        <maxSigLife>604800</maxSigLife>
+        <dsData>
+          <keyTag>12345</keyTag>
+          <alg>3</alg>
+          <digestType>1</digestType>
+          <digest>49FD46E6C4B45C55D4AC</digest>
+          <keyData>
+            <flags>257</flags>
+            <protocol>3</protocol>
+            <alg>3</alg>
+            <pubKey>AQPJ////4Q==</pubKey>
+          </keyData>
+        </dsData>
+      </create>
+    </extension>
+    <clTRID>cltrid:1626454866</clTRID>
+  </command>
+</epp>
