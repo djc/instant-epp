@@ -315,7 +315,7 @@ pub struct Flags {
 
 impl From<Flags> for u16 {
     fn from(s: Flags) -> Self {
-        (u16::from(s.zone_key) << 8) | u16::from(s.secure_entry_point)
+        (Self::from(s.zone_key) << 8) | Self::from(s.secure_entry_point)
     }
 }
 
