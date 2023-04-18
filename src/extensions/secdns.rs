@@ -188,15 +188,7 @@ impl ToXml for DigestAlgorithm {
         id: Option<Id<'_>>,
         serializer: &mut Serializer<'_, W>,
     ) -> Result<(), Error> {
-        let alg = u8::from(*self);
-        if let Some(id) = id {
-            let prefix = serializer.write_start(id.name, id.ns)?;
-            serializer.end_start()?;
-            alg.serialize(None, serializer)?;
-            serializer.write_close(prefix, id.name)
-        } else {
-            alg.serialize(None, serializer)
-        }
+        u8::from(*self).serialize(id, serializer)
     }
 }
 
@@ -279,15 +271,7 @@ impl ToXml for Algorithm {
         id: Option<Id<'_>>,
         serializer: &mut Serializer<'_, W>,
     ) -> Result<(), Error> {
-        let alg = u8::from(*self);
-        if let Some(id) = id {
-            let prefix = serializer.write_start(id.name, id.ns)?;
-            serializer.end_start()?;
-            alg.serialize(None, serializer)?;
-            serializer.write_close(prefix, id.name)
-        } else {
-            alg.serialize(None, serializer)
-        }
+        u8::from(*self).serialize(id, serializer)
     }
 }
 
