@@ -314,8 +314,15 @@ pub struct Flags {
 }
 
 impl From<Flags> for u16 {
-    fn from(s: Flags) -> Self {
-        (Self::from(s.zone_key) << 8) | Self::from(s.secure_entry_point)
+    fn from(flags: Flags) -> Self {
+        let mut res = 0;
+        if flags.zone_key {
+            res |= 0b100000000;
+        }
+        if flags.secure_entry_point {
+            res |= 0x1;
+        }
+        res
     }
 }
 
