@@ -1,8 +1,9 @@
 //! DNS security extensions mapping
 //!
 //! As described in [RFC 5910](https://www.rfc-editor.org/rfc/rfc5910)
-use instant_xml::{Accumulate, Error, Id, ToXml};
+use instant_xml::{Accumulate, Error, Id, Serializer, ToXml};
 use std::borrow::Cow;
+use std::fmt::Write;
 use std::time::Duration;
 
 use crate::request::{Extension, Transaction};
@@ -73,10 +74,10 @@ pub struct DsOrKeyType<'a> {
 }
 
 impl ToXml for DsOrKeyType<'_> {
-    fn serialize<W: std::fmt::Write + ?Sized>(
+    fn serialize<W: Write + ?Sized>(
         &self,
         _: Option<Id<'_>>,
-        serializer: &mut instant_xml::Serializer<'_, W>,
+        serializer: &mut Serializer<'_, W>,
     ) -> Result<(), Error> {
         if let Some(maximum_signature_lifetime) = self.maximum_signature_lifetime {
             let nc_name = "maxSigLife";
@@ -131,7 +132,7 @@ pub struct DsDataType<'a> {
     #[xml(rename = "alg")]
     algorithm: Algorithm,
     #[xml(rename = "digestType")]
-    digest_type: u8,
+    digest_type: DigestAlgorithm,
     digest: Cow<'a, str>,
     #[xml(rename = "keyData")]
     key_data: Option<KeyDataType<'a>>,
@@ -141,7 +142,7 @@ impl<'a> DsDataType<'a> {
     pub fn new(
         key_tag: u16,
         algorithm: Algorithm,
-        digest_type: u8,
+        digest_type: DigestAlgorithm,
         digest: &'a str,
         key_data: Option<KeyDataType<'a>>,
     ) -> Self {
@@ -151,6 +152,50 @@ impl<'a> DsDataType<'a> {
             digest_type,
             digest: digest.into(),
             key_data,
+        }
+    }
+}
+
+/// DigestAlgorithm identifies the algorithm used to construct the digest
+/// https://www.iana.org/assignments/ds-rr-types/ds-rr-types.xhtml
+#[derive(Clone, Copy, Debug)]
+// XXX Do NOT derive PartialEq, Hash or Ord because the variant
+// Other(u8) could clash with one of the other variants. They have to
+// be hand coded.
+pub enum DigestAlgorithm {
+    Sha1,
+    Sha256,
+    Gost,
+    Sha384,
+    Other(u8),
+}
+
+impl From<DigestAlgorithm> for u8 {
+    fn from(s: DigestAlgorithm) -> Self {
+        match s {
+            DigestAlgorithm::Sha1 => 1,
+            DigestAlgorithm::Sha256 => 2,
+            DigestAlgorithm::Gost => 3,
+            DigestAlgorithm::Sha384 => 4,
+            DigestAlgorithm::Other(n) => n,
+        }
+    }
+}
+
+impl ToXml for DigestAlgorithm {
+    fn serialize<W: Write + ?Sized>(
+        &self,
+        id: Option<Id<'_>>,
+        serializer: &mut Serializer<'_, W>,
+    ) -> Result<(), Error> {
+        let alg = u8::from(*self);
+        if let Some(id) = id {
+            let prefix = serializer.write_start(id.name, id.ns)?;
+            serializer.end_start()?;
+            alg.serialize(None, serializer)?;
+            serializer.write_close(prefix, id.name)
+        } else {
+            alg.serialize(None, serializer)
         }
     }
 }
@@ -229,10 +274,10 @@ impl From<Algorithm> for u8 {
 }
 
 impl ToXml for Algorithm {
-    fn serialize<W: std::fmt::Write + ?Sized>(
+    fn serialize<W: Write + ?Sized>(
         &self,
         id: Option<Id<'_>>,
-        serializer: &mut instant_xml::Serializer<'_, W>,
+        serializer: &mut Serializer<'_, W>,
     ) -> Result<(), Error> {
         let alg = u8::from(*self);
         if let Some(id) = id {
@@ -280,7 +325,7 @@ mod tests {
         let ds_data = [secdns::DsDataType::new(
             12345,
             secdns::Algorithm::Dsa,
-            1,
+            secdns::DigestAlgorithm::Sha1,
             "49FD46E6C4B45C55D4AC",
             None,
         )];
@@ -323,7 +368,7 @@ mod tests {
         let ds_data = [secdns::DsDataType::new(
             12345,
             secdns::Algorithm::Dsa,
-            1,
+            secdns::DigestAlgorithm::Sha1,
             "49FD46E6C4B45C55D4AC",
             Some(key_data),
         )];
