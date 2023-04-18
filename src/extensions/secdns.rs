@@ -278,7 +278,7 @@ impl ToXml for Algorithm {
 #[derive(Debug, ToXml)]
 #[xml(rename = "keyData", ns(XMLNS))]
 pub struct KeyDataType<'a> {
-    flags: u16,
+    flags: Flags,
     protocol: Protocol,
     #[xml(rename = "alg")]
     algorithm: Algorithm,
@@ -287,7 +287,12 @@ pub struct KeyDataType<'a> {
 }
 
 impl<'a> KeyDataType<'a> {
-    pub fn new(flags: u16, protocol: Protocol, algorithm: Algorithm, public_key: &'a str) -> Self {
+    pub fn new(
+        flags: Flags,
+        protocol: Protocol,
+        algorithm: Algorithm,
+        public_key: &'a str,
+    ) -> Self {
         Self {
             flags,
             protocol,
@@ -296,6 +301,44 @@ impl<'a> KeyDataType<'a> {
         }
     }
 }
+
+#[derive(Clone, Copy, Debug)]
+pub struct Flags {
+    /// Zone Key flag. If `true` then the DNSKEY record holds a DNS
+    /// zone key. If `false` then the DNSKEY record holds some other
+    /// type of DNS public key.
+    zone_key: bool,
+    /// Secure Entry Point. If `true` then the DNSKEY record holds a
+    /// key intended for use as a secure entry point.
+    secure_entry_point: bool,
+}
+
+impl From<Flags> for u16 {
+    fn from(s: Flags) -> Self {
+        (u16::from(s.zone_key) << 8) | u16::from(s.secure_entry_point)
+    }
+}
+
+impl ToXml for Flags {
+    fn serialize<W: Write + ?Sized>(
+        &self,
+        id: Option<Id<'_>>,
+        serializer: &mut Serializer<'_, W>,
+    ) -> Result<(), Error> {
+        u16::from(*self).serialize(id, serializer)
+    }
+}
+
+/// `Flags` for a zone signing key.
+pub const FLAGS_DNS_ZONE_KEY: Flags = Flags {
+    zone_key: true,
+    secure_entry_point: false,
+};
+/// `Flags` for a key signing key.
+pub const FLAGS_DNS_ZONE_KEY_SEP: Flags = Flags {
+    zone_key: true,
+    secure_entry_point: true,
+};
 
 #[derive(Clone, Copy, Debug)]
 // XXX Do NOT derive PartialEq, Hash or Ord because the variant
@@ -388,7 +431,12 @@ mod tests {
 
     #[test]
     fn create_ds_and_key_data_interface() {
-        let key_data = KeyDataType::new(257, Protocol::Dnssec, Algorithm::Dsa, "AQPJ////4Q==");
+        let key_data = KeyDataType::new(
+            FLAGS_DNS_ZONE_KEY_SEP,
+            Protocol::Dnssec,
+            Algorithm::Dsa,
+            "AQPJ////4Q==",
+        );
         let ds_data = [DsDataType::new(
             12345,
             Algorithm::Dsa,
@@ -432,7 +480,7 @@ mod tests {
     #[test]
     fn create_key_data_interface() {
         let key_data = [KeyDataType::new(
-            257,
+            FLAGS_DNS_ZONE_KEY_SEP,
             Protocol::Dnssec,
             Algorithm::RsaMd5,
             "AQPJ////4Q==",
