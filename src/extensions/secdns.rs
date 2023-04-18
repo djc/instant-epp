@@ -173,7 +173,7 @@ pub enum Algorithm {
     /// Elliptic Curve
     Ecc,
     /// RSA/SHA-1
-    RSASHA1,
+    RsaSha1,
     /// DSA-NSEC3-SHA1
     DsaNsec3Sha1,
     /// RSASHA1-NSEC3-SHA1
@@ -210,7 +210,7 @@ impl From<Algorithm> for u8 {
             Algorithm::Dsa => 3,
             // RFC 4034
             Algorithm::Ecc => 4,
-            Algorithm::RSASHA1 => 5,
+            Algorithm::RsaSha1 => 5,
             Algorithm::DsaNsec3Sha1 => 6,
             Algorithm::RsaSha1Nsec3Sha1 => 7,
             Algorithm::RsaSha256 => 8,
