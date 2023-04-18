@@ -129,7 +129,7 @@ pub struct DsDataType<'a> {
     #[xml(rename = "keyTag")]
     key_tag: u16,
     #[xml(rename = "alg")]
-    algorithm: u8,
+    algorithm: Algorithm,
     #[xml(rename = "digestType")]
     digest_type: u8,
     digest: Cow<'a, str>,
@@ -140,7 +140,7 @@ pub struct DsDataType<'a> {
 impl<'a> DsDataType<'a> {
     pub fn new(
         key_tag: u16,
-        algorithm: u8,
+        algorithm: Algorithm,
         digest_type: u8,
         digest: &'a str,
         key_data: Option<KeyDataType<'a>>,
@@ -155,19 +155,110 @@ impl<'a> DsDataType<'a> {
     }
 }
 
+/// Algorithm identifies the public key's cryptographic algorithm
+/// https://www.iana.org/assignments/dns-sec-alg-numbers/dns-sec-alg-numbers.xhtml#dns-sec-alg-numbers-1
+#[derive(Clone, Copy, Debug)]
+// XXX Do NOT derive PartialEq, Hash or Ord because the variant
+// Other(u8) could clash with one of the other variants. They have to
+// be hand coded.
+pub enum Algorithm {
+    // Delete DS
+    Delete,
+    /// RSA/MD5
+    RsaMd5,
+    /// Diffie-Hellman
+    Dh,
+    /// DSA/SHA-1
+    Dsa,
+    /// Elliptic Curve
+    Ecc,
+    /// RSA/SHA-1
+    RSASHA1,
+    /// DSA-NSEC3-SHA1
+    DsaNsec3Sha1,
+    /// RSASHA1-NSEC3-SHA1
+    RsaSha1Nsec3Sha1,
+    /// RSA/SHA-256
+    RsaSha256,
+    /// RSA/SHA-512
+    RsaSha512,
+    /// GOST R 34.10-2001
+    EccGost,
+    /// ECDSA Curve P-256 with SHA-256
+    EcdsaP256Sha256,
+    /// ECDSA Curve P-384 with SHA-384
+    ECDSAP384Sha384,
+    /// Ed25519
+    Ed25519,
+    /// Ed448
+    Ed448,
+    /// Indirect
+    Indirect,
+    /// Private
+    PrivateDns,
+    /// Private
+    PrivateOid,
+    Other(u8)
+}
+
+impl From<Algorithm> for u8 {
+    fn from(s: Algorithm) -> Self {
+        match s {
+            Algorithm::Delete => 0,
+            Algorithm::RsaMd5 => 1,
+            Algorithm::Dh => 2,
+            Algorithm::Dsa => 3,
+            // RFC 4034
+            Algorithm::Ecc => 4,
+            Algorithm::RSASHA1 => 5,
+            Algorithm::DsaNsec3Sha1 => 6,
+            Algorithm::RsaSha1Nsec3Sha1 => 7,
+            Algorithm::RsaSha256 => 8,
+            Algorithm::RsaSha512 => 10,
+            Algorithm::EccGost => 12,
+            Algorithm::EcdsaP256Sha256 => 13,
+            Algorithm::ECDSAP384Sha384 => 14,
+            Algorithm::Ed25519 => 15,
+            Algorithm::Ed448 => 16,
+            Algorithm::Indirect => 252,
+            Algorithm::PrivateDns => 253,
+            Algorithm::PrivateOid => 254,
+            Algorithm::Other(n) => n,
+        }
+    }
+}
+
+impl ToXml for Algorithm {
+    fn serialize<W: std::fmt::Write + ?Sized>(
+        &self,
+        id: Option<Id<'_>>,
+        serializer: &mut instant_xml::Serializer<'_, W>,
+    ) -> Result<(), Error> {
+        let alg = u8::from(*self);
+        if let Some(id) = id {
+            let prefix = serializer.write_start(id.name, id.ns)?;
+            serializer.end_start()?;
+            alg.serialize(None, serializer)?;
+            serializer.write_close(prefix, id.name)
+        } else {
+            alg.serialize(None, serializer)
+        }
+    }
+}
+
 #[derive(Debug, ToXml)]
 #[xml(rename = "keyData", ns(XMLNS))]
 pub struct KeyDataType<'a> {
     flags: u16,
     protocol: u8,
     #[xml(rename = "alg")]
-    algorithm: u8,
+    algorithm: Algorithm,
     #[xml(rename = "pubKey")]
     public_key: Cow<'a, str>,
 }
 
 impl<'a> KeyDataType<'a> {
-    pub fn new(flags: u16, protocol: u8, algorithm: u8, public_key: &'a str) -> Self {
+    pub fn new(flags: u16, protocol: u8, algorithm: Algorithm, public_key: &'a str) -> Self {
         Self {
             flags,
             protocol,
@@ -188,7 +279,7 @@ mod tests {
     fn create_ds_data_interface() {
         let ds_data = [secdns::DsDataType::new(
             12345,
-            3,
+            secdns::Algorithm::Dsa,
             1,
             "49FD46E6C4B45C55D4AC",
             None,
@@ -228,10 +319,10 @@ mod tests {
 
     #[test]
     fn create_ds_and_key_data_interface() {
-        let key_data = secdns::KeyDataType::new(257, 3, 1, "AQPJ////4Q==");
+        let key_data = secdns::KeyDataType::new(257, 3, secdns::Algorithm::Dsa, "AQPJ////4Q==");
         let ds_data = [secdns::DsDataType::new(
             12345,
-            3,
+            secdns::Algorithm::Dsa,
             1,
             "49FD46E6C4B45C55D4AC",
             Some(key_data),
@@ -271,7 +362,7 @@ mod tests {
 
     #[test]
     fn create_key_data_interface() {
-        let key_data = [secdns::KeyDataType::new(257, 3, 1, "AQPJ////4Q==")];
+        let key_data = [secdns::KeyDataType::new(257, 3, secdns::Algorithm::RsaMd5, "AQPJ////4Q==")];
         let extension = secdns::CreateData::from(key_data.as_ref());
         let ns = [
             domain::HostInfo::Obj(domain::HostObj {

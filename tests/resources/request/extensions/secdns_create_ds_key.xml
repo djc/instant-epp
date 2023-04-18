@@ -28,7 +28,7 @@
           <keyData>
             <flags>257</flags>
             <protocol>3</protocol>
-            <alg>1</alg>
+            <alg>3</alg>
             <pubKey>AQPJ////4Q==</pubKey>
           </keyData>
         </dsData>
