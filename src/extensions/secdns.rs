@@ -224,7 +224,7 @@ pub enum Algorithm {
     /// ECDSA Curve P-256 with SHA-256
     EcdsaP256Sha256,
     /// ECDSA Curve P-384 with SHA-384
-    ECDSAP384Sha384,
+    EcdsaP384Sha384,
     /// Ed25519
     Ed25519,
     /// Ed448
@@ -254,7 +254,7 @@ impl From<Algorithm> for u8 {
             Algorithm::RsaSha512 => 10,
             Algorithm::EccGost => 12,
             Algorithm::EcdsaP256Sha256 => 13,
-            Algorithm::ECDSAP384Sha384 => 14,
+            Algorithm::EcdsaP384Sha384 => 14,
             Algorithm::Ed25519 => 15,
             Algorithm::Ed448 => 16,
             Algorithm::Indirect => 252,
