@@ -198,7 +198,7 @@ pub enum Algorithm {
     PrivateDns,
     /// Private
     PrivateOid,
-    Other(u8)
+    Other(u8),
 }
 
 impl From<Algorithm> for u8 {
@@ -362,7 +362,12 @@ mod tests {
 
     #[test]
     fn create_key_data_interface() {
-        let key_data = [secdns::KeyDataType::new(257, 3, secdns::Algorithm::RsaMd5, "AQPJ////4Q==")];
+        let key_data = [secdns::KeyDataType::new(
+            257,
+            3,
+            secdns::Algorithm::RsaMd5,
+            "AQPJ////4Q==",
+        )];
         let extension = secdns::CreateData::from(key_data.as_ref());
         let ns = [
             domain::HostInfo::Obj(domain::HostObj {
