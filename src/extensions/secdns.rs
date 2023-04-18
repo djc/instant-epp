@@ -1,7 +1,7 @@
 //! DNS security extensions mapping
 //!
 //! As described in [RFC 5910](https://www.rfc-editor.org/rfc/rfc5910)
-use instant_xml::{Accumulate, Error, Id, Serializer, ToXml};
+use instant_xml::{Error, Id, Serializer, ToXml};
 use std::borrow::Cow;
 use std::fmt::Write;
 use std::time::Duration;
@@ -93,27 +93,6 @@ impl ToXml for DsOrKeyType<'_> {
             DsOrKeyData::KeyData(data) => data.serialize(None, serializer)?,
         }
         Ok(())
-    }
-}
-
-#[derive(Default)]
-pub enum DsOrKeyTypeBuilder<'a> {
-    #[default]
-    None,
-    MaxSigLife(Duration),
-    Finished(Option<Duration>, DsOrKeyData<'a>),
-}
-
-impl<'a> Accumulate<DsOrKeyType<'a>> for DsOrKeyTypeBuilder<'a> {
-    fn try_done(self, _: &'static str) -> Result<DsOrKeyType<'a>, Error> {
-        if let Self::Finished(maximum_signature_lifetime, data) = self {
-            Ok(DsOrKeyType {
-                maximum_signature_lifetime,
-                data,
-            })
-        } else {
-            Err(Error::MissingTag)
-        }
     }
 }
 
