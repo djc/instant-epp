@@ -279,7 +279,7 @@ impl ToXml for Algorithm {
 #[xml(rename = "keyData", ns(XMLNS))]
 pub struct KeyDataType<'a> {
     flags: u16,
-    protocol: u8,
+    protocol: Protocol,
     #[xml(rename = "alg")]
     algorithm: Algorithm,
     #[xml(rename = "pubKey")]
@@ -287,7 +287,7 @@ pub struct KeyDataType<'a> {
 }
 
 impl<'a> KeyDataType<'a> {
-    pub fn new(flags: u16, protocol: u8, algorithm: Algorithm, public_key: &'a str) -> Self {
+    pub fn new(flags: u16, protocol: Protocol, algorithm: Algorithm, public_key: &'a str) -> Self {
         Self {
             flags,
             protocol,
@@ -297,23 +297,63 @@ impl<'a> KeyDataType<'a> {
     }
 }
 
+#[derive(Clone, Copy, Debug)]
+// XXX Do NOT derive PartialEq, Hash or Ord because the variant
+// Other(u8) could clash with one of the other variants. They have to
+// be hand coded.
+pub enum Protocol {
+    /// RFC 2535, reserved
+    Tls,
+    /// RFC 2535, reserved
+    Email,
+    /// RFC 5034 DNSSEC
+    Dnssec,
+    /// RFC 2535, reserved
+    Ipsec,
+    /// RFC 2535
+    All,
+    Other(u8),
+}
+
+impl From<Protocol> for u8 {
+    fn from(s: Protocol) -> Self {
+        match s {
+            Protocol::Tls => 1,
+            Protocol::Email => 2,
+            Protocol::Dnssec => 3,
+            Protocol::Ipsec => 4,
+            Protocol::All => 255,
+            Protocol::Other(n) => n,
+        }
+    }
+}
+
+impl ToXml for Protocol {
+    fn serialize<W: Write + ?Sized>(
+        &self,
+        id: Option<Id<'_>>,
+        serializer: &mut Serializer<'_, W>,
+    ) -> Result<(), Error> {
+        u8::from(*self).serialize(id, serializer)
+    }
+}
+
 #[cfg(test)]
 mod tests {
+    use super::*;
     use crate::domain;
-    use crate::extensions::secdns;
     use crate::tests::assert_serialized;
-    use std::time::Duration;
 
     #[test]
     fn create_ds_data_interface() {
-        let ds_data = [secdns::DsDataType::new(
+        let ds_data = [DsDataType::new(
             12345,
-            secdns::Algorithm::Dsa,
-            secdns::DigestAlgorithm::Sha1,
+            Algorithm::Dsa,
+            DigestAlgorithm::Sha1,
             "49FD46E6C4B45C55D4AC",
             None,
         )];
-        let extension = secdns::CreateData::from((Duration::from_secs(604800), ds_data.as_ref()));
+        let extension = CreateData::from((Duration::from_secs(604800), ds_data.as_ref()));
         let ns = [
             domain::HostInfo::Obj(domain::HostObj {
                 name: "ns1.example.com".into(),
@@ -348,15 +388,15 @@ mod tests {
 
     #[test]
     fn create_ds_and_key_data_interface() {
-        let key_data = secdns::KeyDataType::new(257, 3, secdns::Algorithm::Dsa, "AQPJ////4Q==");
-        let ds_data = [secdns::DsDataType::new(
+        let key_data = KeyDataType::new(257, Protocol::Dnssec, Algorithm::Dsa, "AQPJ////4Q==");
+        let ds_data = [DsDataType::new(
             12345,
-            secdns::Algorithm::Dsa,
-            secdns::DigestAlgorithm::Sha1,
+            Algorithm::Dsa,
+            DigestAlgorithm::Sha1,
             "49FD46E6C4B45C55D4AC",
             Some(key_data),
         )];
-        let extension = secdns::CreateData::from((Duration::from_secs(604800), ds_data.as_ref()));
+        let extension = CreateData::from((Duration::from_secs(604800), ds_data.as_ref()));
         let ns = [
             domain::HostInfo::Obj(domain::HostObj {
                 name: "ns1.example.com".into(),
@@ -391,13 +431,13 @@ mod tests {
 
     #[test]
     fn create_key_data_interface() {
-        let key_data = [secdns::KeyDataType::new(
+        let key_data = [KeyDataType::new(
             257,
-            3,
-            secdns::Algorithm::RsaMd5,
+            Protocol::Dnssec,
+            Algorithm::RsaMd5,
             "AQPJ////4Q==",
         )];
-        let extension = secdns::CreateData::from(key_data.as_ref());
+        let extension = CreateData::from(key_data.as_ref());
         let ns = [
             domain::HostInfo::Obj(domain::HostObj {
                 name: "ns1.example.com".into(),
