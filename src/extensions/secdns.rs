@@ -296,7 +296,7 @@ impl From<Flags> for u16 {
     fn from(flags: Flags) -> Self {
         let mut res = 0;
         if flags.zone_key {
-            res |= 0b100000000;
+            res |= 0b1_0000_0000;
         }
         if flags.secure_entry_point {
             res |= 0x1;
