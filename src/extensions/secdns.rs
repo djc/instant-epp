@@ -6,6 +6,7 @@ use std::borrow::Cow;
 use std::fmt::Write;
 use std::time::Duration;
 
+use crate::common::NoExtension;
 use crate::request::{Extension, Transaction};
 
 pub const XMLNS: &str = "urn:ietf:params:xml:ns:secDNS-1.1";
@@ -13,7 +14,7 @@ pub const XMLNS: &str = "urn:ietf:params:xml:ns:secDNS-1.1";
 impl<'a> Transaction<CreateData<'a>> for crate::domain::create::DomainCreate<'a> {}
 
 impl<'a> Extension for CreateData<'a> {
-    type Response = ();
+    type Response = NoExtension;
 }
 
 #[derive(Debug, ToXml)]
