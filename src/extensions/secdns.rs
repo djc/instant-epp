@@ -119,11 +119,11 @@ pub struct DsDataType<'a> {
 }
 
 impl<'a> DsDataType<'a> {
-    pub fn new(
+    pub fn new<D: Into<Cow<'a, str>>>(
         key_tag: u16,
         algorithm: Algorithm,
         digest_type: DigestAlgorithm,
-        digest: &'a str,
+        digest: D,
         key_data: Option<KeyDataType<'a>>,
     ) -> Self {
         Self {
