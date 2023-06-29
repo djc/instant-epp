@@ -149,7 +149,6 @@ impl<C: Connector> EppClient<C> {
             tr_ids: rsp.tr_ids,
         }));
 
-        error!(%response, "Failed to deserialize response for transaction: {}", err);
         Err(err)
     }
 
