@@ -246,7 +246,7 @@ impl RustlsConnector {
                     .map(|cert| tokio_rustls::rustls::Certificate(cert.0))
                     .collect();
                 builder
-                    .with_single_cert(certs, tokio_rustls::rustls::PrivateKey(key.0))
+                    .with_client_auth_cert(certs, tokio_rustls::rustls::PrivateKey(key.0))
                     .map_err(|e| Error::Other(e.into()))?
             }
             None => builder.with_no_client_auth(),
