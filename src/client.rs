@@ -221,7 +221,7 @@ mod rustls_connector {
     use tokio::net::lookup_host;
     use tokio::net::TcpStream;
     use tokio_rustls::client::TlsStream;
-    use tokio_rustls::rustls::{ClientConfig, OwnedTrustAnchor, RootCertStore, ServerName};
+    use tokio_rustls::rustls::{ClientConfig, RootCertStore, ServerName};
     use tokio_rustls::TlsConnector;
     use tracing::info;
 
@@ -241,13 +241,13 @@ mod rustls_connector {
             identity: Option<(Vec<Certificate>, PrivateKey)>,
         ) -> Result<Self, Error> {
             let mut roots = RootCertStore::empty();
-            roots.add_server_trust_anchors(webpki_roots::TLS_SERVER_ROOTS.0.iter().map(|ta| {
-                OwnedTrustAnchor::from_subject_spki_name_constraints(
-                    ta.subject,
-                    ta.spki,
-                    ta.name_constraints,
-                )
-            }));
+            for cert in rustls_native_certs::load_native_certs()? {
+                roots
+                    .add(&tokio_rustls::rustls::Certificate(cert.0))
+                    .map_err(|err| {
+                        Box::new(err) as Box<dyn std::error::Error + Send + Sync + 'static>
+                    })?;
+            }
 
             let builder = ClientConfig::builder()
                 .with_safe_defaults()
