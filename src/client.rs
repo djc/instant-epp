@@ -209,7 +209,7 @@ impl<'c, 'e, C, E> Clone for RequestData<'c, 'e, C, E> {
 impl<'c, 'e, C, E> Copy for RequestData<'c, 'e, C, E> {}
 
 #[cfg(feature = "rustls")]
-use rustls_connector::RustlsConnector;
+pub use rustls_connector::RustlsConnector;
 
 #[cfg(feature = "rustls")]
 mod rustls_connector {
