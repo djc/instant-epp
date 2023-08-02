@@ -3,7 +3,7 @@ use std::time::Duration;
 use tracing::{debug, error};
 
 use crate::common::NoExtension;
-#[cfg(feature = "tokio-rustls")]
+#[cfg(feature = "rustls")]
 use crate::common::{Certificate, PrivateKey};
 pub use crate::connection::Connector;
 use crate::connection::EppConnection;
@@ -29,7 +29,7 @@ use crate::xml;
 /// use instant_epp::domain::DomainCheck;
 /// use instant_epp::common::NoExtension;
 ///
-/// # #[cfg(feature = "tokio-rustls")]
+/// # #[cfg(feature = "rustls")]
 /// # #[tokio::main]
 /// # async fn main() {
 /// // Create an instance of EppClient
@@ -54,7 +54,7 @@ use crate::xml;
 ///     .for_each(|chk| println!("Domain: {}, Available: {}", chk.inner.id, chk.inner.available));
 /// # }
 /// #
-/// # #[cfg(not(feature = "tokio-rustls"))]
+/// # #[cfg(not(feature = "rustls"))]
 /// # fn main() {}
 /// ```
 ///
@@ -68,7 +68,7 @@ pub struct EppClient<C: Connector> {
     connection: EppConnection<C>,
 }
 
-#[cfg(feature = "tokio-rustls")]
+#[cfg(feature = "rustls")]
 impl EppClient<RustlsConnector> {
     /// Connect to the specified `addr` and `hostname` over TLS
     ///
@@ -208,10 +208,10 @@ impl<'c, 'e, C, E> Clone for RequestData<'c, 'e, C, E> {
 // Manual impl because this does not depend on whether `C` and `E` are `Copy`
 impl<'c, 'e, C, E> Copy for RequestData<'c, 'e, C, E> {}
 
-#[cfg(feature = "tokio-rustls")]
+#[cfg(feature = "rustls")]
 use rustls_connector::RustlsConnector;
 
-#[cfg(feature = "tokio-rustls")]
+#[cfg(feature = "rustls")]
 mod rustls_connector {
     use std::io;
     use std::sync::Arc;
