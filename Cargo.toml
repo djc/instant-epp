@@ -2,7 +2,7 @@
 name = "instant-epp"
 version = "0.1.0"
 edition = "2021"
-rust-version = "1.59"
+rust-version = "1.63"
 license = "MIT"
 description = "EPP client library for async Rust"
 repository = "https://github.com/InstantDomain/instant-epp"
