@@ -103,7 +103,7 @@ impl<'xml> FromXml<'xml> for Status {
             return Err(Error::MissingValue(field));
         }
 
-        *into = Some(match attr.value {
+        *into = Some(match attr.value.as_ref() {
             "clientDeleteProhibited" => Self::ClientDeleteProhibited,
             "serverDeleteProhibited" => Self::ServerDeleteProhibited,
             "clientUpdateProhibited" => Self::ClientUpdateProhibited,
