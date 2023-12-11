@@ -72,13 +72,3 @@ pub struct Services<'a> {
     #[xml(rename = "svcExtension")]
     pub svc_ext: Option<ServiceExtension<'a>>,
 }
-
-/// This type contains a single DER-encoded X.509 certificate.
-///
-/// The rustls-pemfile crate can be used to parse a PEM file.
-pub struct Certificate(pub Vec<u8>);
-
-/// This type contains a DER-encoded ASN.1 private key in PKCS#8 or PKCS#1 format.
-///
-/// The rustls-pemfile crate can be used to parse a PEM file in these formats.
-pub struct PrivateKey(pub Vec<u8>);

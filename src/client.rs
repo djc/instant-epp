@@ -1,10 +1,10 @@
 use std::time::Duration;
 
+#[cfg(feature = "rustls")]
+use rustls_pki_types::{CertificateDer, PrivateKeyDer};
 use tracing::{debug, error};
 
 use crate::common::NoExtension;
-#[cfg(feature = "rustls")]
-use crate::common::{Certificate, PrivateKey};
 pub use crate::connection::Connector;
 use crate::connection::EppConnection;
 use crate::error::Error;
@@ -82,7 +82,7 @@ impl EppClient<RustlsConnector> {
     pub async fn connect(
         registry: String,
         server: (String, u16),
-        identity: Option<(Vec<Certificate>, PrivateKey)>,
+        identity: Option<(Vec<CertificateDer<'static>>, PrivateKeyDer<'static>)>,
         timeout: Duration,
     ) -> Result<Self, Error> {
         let connector = RustlsConnector::new(server, identity).await?;
@@ -215,60 +215,52 @@ mod rustls_connector {
     use std::time::Duration;
 
     use async_trait::async_trait;
+    use rustls_pki_types::{CertificateDer, PrivateKeyDer, ServerName};
     use tokio::net::lookup_host;
     use tokio::net::TcpStream;
     use tokio_rustls::client::TlsStream;
-    use tokio_rustls::rustls::{ClientConfig, RootCertStore, ServerName};
+    use tokio_rustls::rustls::{ClientConfig, RootCertStore};
     use tokio_rustls::TlsConnector;
     use tracing::info;
 
-    use crate::common::{Certificate, PrivateKey};
     use crate::connection::{self, Connector};
     use crate::error::Error;
 
     pub struct RustlsConnector {
         inner: TlsConnector,
-        domain: ServerName,
+        domain: ServerName<'static>,
         server: (String, u16),
     }
 
     impl RustlsConnector {
         pub async fn new(
             server: (String, u16),
-            identity: Option<(Vec<Certificate>, PrivateKey)>,
+            identity: Option<(Vec<CertificateDer<'static>>, PrivateKeyDer<'static>)>,
         ) -> Result<Self, Error> {
             let mut roots = RootCertStore::empty();
             for cert in rustls_native_certs::load_native_certs()? {
-                roots
-                    .add(&tokio_rustls::rustls::Certificate(cert.0))
-                    .map_err(|err| {
-                        Box::new(err) as Box<dyn std::error::Error + Send + Sync + 'static>
-                    })?;
+                roots.add(cert).map_err(|err| {
+                    Box::new(err) as Box<dyn std::error::Error + Send + Sync + 'static>
+                })?;
             }
 
-            let builder = ClientConfig::builder()
-                .with_safe_defaults()
-                .with_root_certificates(roots);
+            let builder = ClientConfig::builder().with_root_certificates(roots);
 
             let config = match identity {
-                Some((certs, key)) => {
-                    let certs = certs
-                        .into_iter()
-                        .map(|cert| tokio_rustls::rustls::Certificate(cert.0))
-                        .collect();
-                    builder
-                        .with_client_auth_cert(certs, tokio_rustls::rustls::PrivateKey(key.0))
-                        .map_err(|e| Error::Other(e.into()))?
-                }
+                Some((certs, key)) => builder
+                    .with_client_auth_cert(certs, key)
+                    .map_err(|e| Error::Other(e.into()))?,
                 None => builder.with_no_client_auth(),
             };
 
-            let domain = server.0.as_str().try_into().map_err(|_| {
-                io::Error::new(
-                    io::ErrorKind::InvalidInput,
-                    format!("Invalid domain: {}", server.0),
-                )
-            })?;
+            let domain = ServerName::try_from(server.0.as_str())
+                .map_err(|_| {
+                    io::Error::new(
+                        io::ErrorKind::InvalidInput,
+                        format!("invalid domain: {}", server.0),
+                    )
+                })?
+                .to_owned();
 
             Ok(Self {
                 inner: TlsConnector::from(Arc::new(config)),
