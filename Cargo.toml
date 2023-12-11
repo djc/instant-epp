@@ -9,17 +9,18 @@ repository = "https://github.com/InstantDomain/instant-epp"
 
 [features]
 default = ["rustls"]
-rustls = ["tokio-rustls", "rustls-native-certs"]
+rustls = ["tokio-rustls", "rustls-pki-types", "rustls-native-certs"]
 
 [dependencies]
 async-trait = "0.1.52"
 celes = "2.1"
 chrono = { version = "0.4.23", features = ["serde"] }
 instant-xml = { version = "0.4", features = ["chrono"] }
-rustls-native-certs = { version = "0.6.3", optional = true }
+rustls-native-certs = { version = "0.7", optional = true }
+rustls-pki-types = { version = "1", optional = true }
 serde = { version = "1.0", features = ["derive"] }
 tokio = { version = "1.0", features = ["io-util", "net", "time"] }
-tokio-rustls = { version = "0.24", optional = true }
+tokio-rustls = { version = "0.25", optional = true }
 tracing = "0.1.29"
 
 [dev-dependencies]
