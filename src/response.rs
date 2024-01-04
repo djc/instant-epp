@@ -135,6 +135,31 @@ impl ResultCode {
                 | CommandCompletedSuccessfullyEndingSession
         )
     }
+
+    /// Returns true if this error is likely to persist across similar requests inside the same
+    /// connection or session.
+    ///
+    /// The same command with different arguments might succeed in some cases.
+    pub fn is_persistent(&self) -> bool {
+        use ResultCode::*;
+        match self {
+            // The same command with different arguments will result in the same error
+            UnknownCommand
+            | CommandSyntaxError
+            | RequiredParameterMissing
+            | ParameterValueRangeError
+            | ParameterValueSyntaxError
+            | UnimplementedProtocolVersion
+            | UnimplementedCommand
+            | UnimplementedOption
+            | UnimplementedExtension => true,
+            // The connection is in an unhealthy state
+            CommandFailedServerClosingConnection
+            | AuthenticationErrorServerClosingConnection
+            | SessionLimitExceededServerClosingConnection => true,
+            _ => false,
+        }
+    }
 }
 
 impl<'xml> FromXml<'xml> for ResultCode {
