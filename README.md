@@ -1,3 +1,5 @@
+![Cover logo](./cover.svg)
+
 # EPP client library for async Rust
 
 [![Documentation](https://docs.rs/instant-epp/badge.svg)](https://docs.rs/instant-epp)
