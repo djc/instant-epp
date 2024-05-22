@@ -1,6 +1,6 @@
 //! Types for EPP responses
 
-use std::fmt::{self, Debug};
+use std::fmt::Debug;
 
 use chrono::{DateTime, Utc};
 use instant_xml::{FromXml, Kind};
@@ -193,26 +193,6 @@ impl<'xml> FromXml<'xml> for ResultCode {
 
     type Accumulator = Option<Self>;
     const KIND: instant_xml::Kind = Kind::Scalar;
-}
-
-struct ResultCodeVisitor;
-
-impl<'de> serde::de::Visitor<'de> for ResultCodeVisitor {
-    type Value = ResultCode;
-
-    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-        formatter.write_str("a valid EPP result code")
-    }
-
-    fn visit_u16<E>(self, v: u16) -> Result<Self::Value, E>
-    where
-        E: serde::de::Error,
-    {
-        use serde::de::Unexpected;
-        ResultCode::from_u16(v).ok_or_else(|| {
-            E::invalid_value(Unexpected::Unsigned(v as u64), &"unexpected result code")
-        })
-    }
 }
 
 /// Type corresponding to the `<trID>` tag in an EPP response XML
