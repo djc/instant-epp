@@ -3,6 +3,7 @@ use instant_xml::{FromXml, ToXml};
 use crate::common::{NoExtension, EPP_XMLNS};
 use crate::domain::transfer::TransferData;
 use crate::extensions::low_balance::LowBalance;
+use crate::extensions::rgp::poll::RgpPollData;
 use crate::host::info::InfoData;
 use crate::request::{Command, Transaction};
 
@@ -70,6 +71,8 @@ pub enum PollData {
     HostInfo(InfoData),
     /// Data under the `<lowbalance>` tag
     LowBalance(LowBalance),
+    /// Data under the `<rgp-poll:pollData>` tag
+    RgpPoll(RgpPollData),
 }
 
 #[cfg(test)]
