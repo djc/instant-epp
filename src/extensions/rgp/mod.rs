@@ -2,6 +2,7 @@
 //!
 //! As described in [RFC 3915](https://tools.ietf.org/html/rfc3915).
 
+pub mod poll; // Technically a separate extension (different namespace, RFC)
 pub mod report;
 pub mod request;
 
