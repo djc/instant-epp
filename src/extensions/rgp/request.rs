@@ -7,7 +7,7 @@ use crate::{
     request::{Extension, Transaction},
 };
 
-use super::XMLNS;
+use super::{RgpStatus, XMLNS};
 
 impl<'a> Transaction<Update<RgpRestoreRequest<'a>>> for DomainUpdate<'a> {}
 
@@ -42,15 +42,6 @@ impl Default for RgpRestoreRequest<'static> {
 
 // Response
 
-/// Type that represents the `<rgpStatus>` tag for domain rgp restore request response
-#[derive(Debug, FromXml)]
-#[xml(rename = "rgpStatus", ns(XMLNS))]
-pub struct RgpStatus {
-    /// The domain RGP status
-    #[xml(rename = "s", attribute)]
-    pub status: String,
-}
-
 #[derive(Debug, FromXml)]
 #[xml(rename = "upData", ns(XMLNS))]
 /// Type that represents the `<resData>` tag for domain transfer response
@@ -81,6 +72,7 @@ mod tests {
     use crate::domain::info::DomainInfo;
     use crate::domain::update::{DomainChangeInfo, DomainUpdate};
     use crate::extensions::rgp::request::RgpRequestResponse;
+    use crate::extensions::rgp::RgpStatus;
     use crate::response::ResultCode;
     use crate::tests::{assert_serialized, response_from_file_with_ext, SUCCESS_MSG, SVTRID};
 
@@ -120,7 +112,7 @@ mod tests {
             _ => panic!("Unexpected response type"),
         };
 
-        assert_eq!(data.rgp_status[0].status, "pendingRestore".to_string());
+        assert_eq!(data.rgp_status[0], RgpStatus::PendingRestore);
         assert_eq!(object.tr_ids.server_tr_id, SVTRID);
     }
 
@@ -136,7 +128,7 @@ mod tests {
             _ => panic!("Unexpected response type"),
         };
 
-        assert_eq!(data.rgp_status[0].status, "addPeriod");
-        assert_eq!(data.rgp_status[1].status, "renewPeriod");
+        assert_eq!(data.rgp_status[0], RgpStatus::AddPeriod);
+        assert_eq!(data.rgp_status[1], RgpStatus::RenewPeriod);
     }
 }
