@@ -38,10 +38,10 @@ impl<'xml> FromXml<'xml> for Country {
 
     fn deserialize<'cx>(
         into: &mut Self::Accumulator,
-        _: &'static str,
+        field: &'static str,
         deserializer: &mut instant_xml::Deserializer<'cx, 'xml>,
     ) -> Result<(), instant_xml::Error> {
-        from_xml_str(deserializer, into)
+        from_xml_str(into, field, deserializer)
     }
 
     type Accumulator = Option<Self>;
