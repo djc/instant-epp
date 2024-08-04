@@ -52,7 +52,7 @@ impl Transaction<NameStore<'_>> for HostUpdate<'_> {}
 
 impl<'a> NameStore<'a> {
     /// Create a new RGP restore report request
-    pub fn new(subproduct: &'a str) -> NameStore {
+    pub fn new(subproduct: &'a str) -> Self {
         NameStore {
             subproduct: subproduct.into(),
         }

@@ -35,7 +35,7 @@ pub struct ContactInfo<'a> {
 }
 
 impl<'a> ContactInfo<'a> {
-    pub fn new(id: &'a str, auth_password: &'a str) -> ContactInfo<'a> {
+    pub fn new(id: &'a str, auth_password: &'a str) -> Self {
         Self {
             info: ContactInfoRequest {
                 id,
