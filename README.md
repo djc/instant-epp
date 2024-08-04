@@ -22,7 +22,7 @@ for domain registrars. We have implemented support for the following standards:
 - [Namestore Extension Mapping](https://www.verisign.com/assets/epp-sdk/verisign_epp-extension_namestoreext_v01.html)
 - [Low Balance Mapping](https://www.verisign.com/assets/epp-sdk/verisign_epp-extension_low-balance_v01.html)
 
-This library is used in production at [Instant Domains](https://instantdomains.com/).
+This library is used in production at [Instant Domain Search](https://instantdomainsearch.com/).
 
 ## History
 
