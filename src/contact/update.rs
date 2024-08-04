@@ -14,7 +14,7 @@ impl<'a> Command for ContactUpdate<'a> {
 }
 
 impl<'a> ContactUpdate<'a> {
-    pub fn new(id: &'a str) -> ContactUpdate {
+    pub fn new(id: &'a str) -> Self {
         Self {
             contact: ContactUpdateRequest {
                 id,
@@ -69,12 +69,6 @@ pub struct ContactChangeInfo<'a> {
     fax: Option<Fax<'a>>,
     email: Option<&'a str>,
     auth_info: Option<ContactAuthInfo<'a>>,
-}
-
-/// Type for list of elements of the `<status>` tag for contact update request
-#[derive(Debug, ToXml)]
-pub struct StatusList<'a> {
-    status: &'a [Status],
 }
 
 #[derive(Debug, ToXml)]
