@@ -215,6 +215,7 @@ mod rustls_connector {
     use std::time::Duration;
 
     use async_trait::async_trait;
+    use rustls_native_certs::CertificateResult;
     use rustls_pki_types::{CertificateDer, PrivateKeyDer, ServerName};
     use tokio::net::lookup_host;
     use tokio::net::TcpStream;
@@ -238,7 +239,14 @@ mod rustls_connector {
             identity: Option<(Vec<CertificateDer<'static>>, PrivateKeyDer<'static>)>,
         ) -> Result<Self, Error> {
             let mut roots = RootCertStore::empty();
-            for cert in rustls_native_certs::load_native_certs()? {
+            let CertificateResult {
+                certs, mut errors, ..
+            } = rustls_native_certs::load_native_certs();
+            if let Some(err) = errors.pop() {
+                return Err(Error::Other(err.into()));
+            }
+
+            for cert in certs {
                 roots.add(cert).map_err(|err| {
                     Box::new(err) as Box<dyn std::error::Error + Send + Sync + 'static>
                 })?;
