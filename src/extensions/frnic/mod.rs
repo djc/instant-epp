@@ -22,8 +22,8 @@ pub struct Create<T> {
 
 #[cfg(test)]
 mod tests {
-    use crate::contact::ContactCreate;
     use crate::contact::{Address, PostalInfo, Voice};
+    use crate::contact::{ContactCreate, InfoType};
     use crate::extensions::frnic;
     use crate::tests::assert_serialized;
     use frnic::{contact, Ext};
@@ -36,7 +36,7 @@ mod tests {
             "XXX000",
             "test@test.fr",
             PostalInfo::new(
-                "loc",
+                InfoType::Local,
                 "Dupont",
                 None,
                 Address::new(
@@ -66,7 +66,7 @@ mod tests {
             "XXXXXXX",
             "test@test.fr",
             PostalInfo::new(
-                "loc",
+                InfoType::Local,
                 "SARL DUPONT",
                 None,
                 Address::new(
@@ -100,7 +100,7 @@ mod tests {
             "XXXX0000",
             "test@test.fr",
             PostalInfo::new(
-                "loc",
+                InfoType::Local,
                 "SARL DUPONT SIREN",
                 None,
                 Address::new(
@@ -136,7 +136,7 @@ mod tests {
             "XXXX0000",
             "test@test.fr",
             PostalInfo::new(
-                "loc",
+                InfoType::Local,
                 "Dupont JO",
                 None,
                 Address::new(

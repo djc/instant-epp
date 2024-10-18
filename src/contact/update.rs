@@ -105,7 +105,7 @@ pub struct ContactUpdate<'a> {
 #[cfg(test)]
 mod tests {
     use super::{ContactUpdate, PostalInfo, Status, Voice};
-    use crate::contact::Address;
+    use crate::contact::{Address, InfoType};
     use crate::response::ResultCode;
     use crate::tests::{assert_serialized, response_from_file, CLTRID, SUCCESS_MSG, SVTRID};
 
@@ -121,7 +121,8 @@ mod tests {
             Some("392374"),
             "FR".parse().unwrap(),
         );
-        let postal_info = PostalInfo::new("loc", "John Doe", Some("Acme Widgets"), address);
+        let postal_info =
+            PostalInfo::new(InfoType::Local, "John Doe", Some("Acme Widgets"), address);
         let voice = Voice::new("+33.47237942");
 
         object.set_info("newemail@eppdev.net", postal_info, voice, "eppdev-387323");

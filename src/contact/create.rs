@@ -86,7 +86,7 @@ mod tests {
     use chrono::{TimeZone, Utc};
 
     use super::{ContactCreate, Fax, PostalInfo, Voice};
-    use crate::contact::Address;
+    use crate::contact::{Address, InfoType};
     use crate::response::ResultCode;
     use crate::tests::{assert_serialized, response_from_file, CLTRID, SUCCESS_MSG, SVTRID};
 
@@ -100,7 +100,12 @@ mod tests {
             Some("392374"),
             "FR".parse().unwrap(),
         );
-        let postal_info = PostalInfo::new("int", "John Doe", Some("Acme Widgets"), address);
+        let postal_info = PostalInfo::new(
+            InfoType::International,
+            "John Doe",
+            Some("Acme Widgets"),
+            address,
+        );
         let mut voice = Voice::new("+33.47237942");
         voice.set_extension("123");
         let mut fax = Fax::new("+33.86698799");
@@ -121,7 +126,7 @@ mod tests {
     #[test]
     fn command_minimal() {
         let address = Address::new(&[], "Paris", None, None, "FR".parse().unwrap());
-        let postal_info = PostalInfo::new("int", "John Doe", None, address);
+        let postal_info = PostalInfo::new(InfoType::International, "John Doe", None, address);
         let object = ContactCreate::new(
             "eppdev-contact-3",
             "contact@eppdev.net",
