@@ -7,9 +7,9 @@ use super::{DomainAuthInfo, DomainContact, HostInfo, NameServers, Period, XMLNS}
 use crate::common::{NoExtension, EPP_XMLNS};
 use crate::request::{Command, Transaction};
 
-impl<'a> Transaction<NoExtension> for DomainCreate<'a> {}
+impl Transaction<NoExtension> for DomainCreate<'_> {}
 
-impl<'a> Command for DomainCreate<'a> {
+impl Command for DomainCreate<'_> {
     type Response = CreateData;
     const COMMAND: &'static str = "create";
 }

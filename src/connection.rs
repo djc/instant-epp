@@ -230,7 +230,7 @@ pub(crate) struct RequestFuture<'a, C: Connector> {
     conn: &'a mut EppConnection<C>,
 }
 
-impl<'a, C: Connector> Future for RequestFuture<'a, C> {
+impl<C: Connector> Future for RequestFuture<'_, C> {
     type Output = Result<String, Error>;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {

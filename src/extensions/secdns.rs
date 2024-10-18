@@ -13,7 +13,7 @@ pub const XMLNS: &str = "urn:ietf:params:xml:ns:secDNS-1.1";
 
 impl<'a> Transaction<CreateData<'a>> for crate::domain::create::DomainCreate<'a> {}
 
-impl<'a> Extension for CreateData<'a> {
+impl Extension for CreateData<'_> {
     type Response = NoExtension;
 }
 

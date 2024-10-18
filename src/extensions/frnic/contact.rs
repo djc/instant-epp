@@ -8,7 +8,7 @@ use super::{Create, Ext, XMLNS};
 
 impl<'a> Transaction<Ext<Create<ContactCreate<'a>>>> for crate::contact::create::ContactCreate<'a> {}
 
-impl<'a> Extension for Ext<Create<ContactCreate<'a>>> {
+impl Extension for Ext<Create<ContactCreate<'_>>> {
     type Response = ();
 }
 
@@ -81,7 +81,7 @@ impl<'a> ContactCreate<'a> {
     }
 }
 
-impl<'a> ToXml for ContactCreate<'a> {
+impl ToXml for ContactCreate<'_> {
     fn serialize<W: core::fmt::Write + ?Sized>(
         &self,
         _: Option<Id<'_>>,
@@ -124,7 +124,7 @@ pub enum LegalStatus<'a> {
     Other(Cow<'a, str>),
 }
 
-impl<'a> ToXml for LegalStatus<'a> {
+impl ToXml for LegalStatus<'_> {
     fn serialize<W: core::fmt::Write + ?Sized>(
         &self,
         _field: Option<Id<'_>>,

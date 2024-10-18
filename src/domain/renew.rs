@@ -7,9 +7,9 @@ use super::{Period, XMLNS};
 use crate::common::{NoExtension, EPP_XMLNS};
 use crate::request::{Command, Transaction};
 
-impl<'a> Transaction<NoExtension> for DomainRenew<'a> {}
+impl Transaction<NoExtension> for DomainRenew<'_> {}
 
-impl<'a> Command for DomainRenew<'a> {
+impl Command for DomainRenew<'_> {
     type Response = RenewData;
     const COMMAND: &'static str = "renew";
 }

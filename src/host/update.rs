@@ -8,9 +8,9 @@ use super::{serialize_host_addrs_option, Status, XMLNS};
 use crate::common::{NoExtension, EPP_XMLNS};
 use crate::request::{Command, Transaction};
 
-impl<'a> Transaction<NoExtension> for HostUpdate<'a> {}
+impl Transaction<NoExtension> for HostUpdate<'_> {}
 
-impl<'a> Command for HostUpdate<'a> {
+impl Command for HostUpdate<'_> {
     type Response = ();
     const COMMAND: &'static str = "update";
 }

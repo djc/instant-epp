@@ -13,7 +13,7 @@ impl<'a> Transaction<Update<RgpRestoreRequest<'a>>> for DomainUpdate<'a> {}
 
 impl<'a> Transaction<Update<RgpRestoreRequest<'a>>> for DomainInfo<'a> {}
 
-impl<'a> Extension for Update<RgpRestoreRequest<'a>> {
+impl Extension for Update<RgpRestoreRequest<'_>> {
     type Response = RgpRequestResponse;
 }
 

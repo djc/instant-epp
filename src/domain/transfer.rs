@@ -7,9 +7,9 @@ use super::{DomainAuthInfo, Period, XMLNS};
 use crate::common::{NoExtension, EPP_XMLNS};
 use crate::request::{Command, Transaction};
 
-impl<'a> Transaction<NoExtension> for DomainTransfer<'a> {}
+impl Transaction<NoExtension> for DomainTransfer<'_> {}
 
-impl<'a> Command for DomainTransfer<'a> {
+impl Command for DomainTransfer<'_> {
     type Response = TransferData;
     const COMMAND: &'static str = "transfer";
 }

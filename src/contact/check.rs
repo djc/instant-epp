@@ -8,9 +8,9 @@ use super::XMLNS;
 use crate::common::{NoExtension, EPP_XMLNS};
 use crate::request::{Command, Transaction};
 
-impl<'a> Transaction<NoExtension> for ContactCheck<'a> {}
+impl Transaction<NoExtension> for ContactCheck<'_> {}
 
-impl<'a> Command for ContactCheck<'a> {
+impl Command for ContactCheck<'_> {
     type Response = CheckData;
     const COMMAND: &'static str = "check";
 }
