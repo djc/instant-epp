@@ -150,27 +150,30 @@ pub struct DomainContact<'a> {
 }
 
 /// The `<period>` type for registration, renewal or transfer on domain transactions
-#[derive(Clone, Copy, Debug, ToXml)]
-#[xml(rename = "period", ns(XMLNS))]
+#[derive(Clone, Copy, Debug)]
 pub struct Period {
     /// The interval (usually 'y' indicating years)
-    #[xml(attribute)]
-    unit: char,
+    unit: PerdiodUnit,
     /// The length of the registration, renewal or transfer period (usually in years)
-    #[xml(direct)]
     length: u8,
+}
+
+#[derive(Clone, Copy, Debug)]
+pub enum PerdiodUnit {
+    Years,
+    Months,
 }
 
 impl Period {
     pub fn years(length: u8) -> Result<Self, Error> {
-        Self::new(length, 'y')
+        Self::new(length, PerdiodUnit::Years)
     }
 
     pub fn months(length: u8) -> Result<Self, Error> {
-        Self::new(length, 'm')
+        Self::new(length, PerdiodUnit::Months)
     }
 
-    fn new(length: u8, unit: char) -> Result<Self, Error> {
+    pub fn new(length: u8, unit: PerdiodUnit) -> Result<Self, Error> {
         match length {
             1..=99 => Ok(Self { length, unit }),
             0 | 100.. => Err(Error::Other(
@@ -180,28 +183,57 @@ impl Period {
     }
 }
 
+impl ToXml for Period {
+    fn serialize<W: fmt::Write + ?Sized>(
+        &self,
+        field: Option<instant_xml::Id<'_>>,
+        serializer: &mut Serializer<W>,
+    ) -> Result<(), instant_xml::Error> {
+        #[derive(ToXml)]
+        #[xml(rename = "period", ns(XMLNS))]
+        struct PeriodXml {
+            /// The interval (usually 'y' indicating years)
+            #[xml(attribute)]
+            unit: char,
+            /// The length of the registration, renewal or transfer period (usually in years)
+            #[xml(direct)]
+            length: u8,
+        }
+
+        let period = PeriodXml {
+            unit: match self.unit {
+                PerdiodUnit::Years => 'y',
+                PerdiodUnit::Months => 'm',
+            },
+            length: self.length,
+        };
+
+        period.serialize(field, serializer)
+    }
+}
+
 pub const ONE_YEAR: Period = Period {
-    unit: 'y',
+    unit: PerdiodUnit::Years,
     length: 1,
 };
 
 pub const TWO_YEARS: Period = Period {
-    unit: 'y',
+    unit: PerdiodUnit::Years,
     length: 2,
 };
 
 pub const THREE_YEARS: Period = Period {
-    unit: 'y',
+    unit: PerdiodUnit::Years,
     length: 3,
 };
 
 pub const ONE_MONTH: Period = Period {
-    unit: 'm',
+    unit: PerdiodUnit::Months,
     length: 1,
 };
 
 pub const SIX_MONTHS: Period = Period {
-    unit: 'm',
+    unit: PerdiodUnit::Months,
     length: 6,
 };
 
