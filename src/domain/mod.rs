@@ -150,29 +150,19 @@ pub struct DomainContact<'a> {
 }
 
 /// The `<period>` type for registration, renewal or transfer on domain transactions
-#[derive(Clone, Copy, Debug, ToXml)]
-#[xml(rename = "period", ns(XMLNS))]
-pub struct Period {
-    /// The interval (usually 'y' indicating years)
-    #[xml(attribute)]
-    unit: char,
-    /// The length of the registration, renewal or transfer period (usually in years)
-    #[xml(direct)]
-    length: u8,
+#[derive(Clone, Copy, Debug)]
+pub enum Period {
+    Years(PeriodLength),
+    Months(PeriodLength),
 }
 
-impl Period {
-    pub fn years(length: u8) -> Result<Self, Error> {
-        Self::new(length, 'y')
-    }
+#[derive(Clone, Copy, Debug)]
+pub struct PeriodLength(u8);
 
-    pub fn months(length: u8) -> Result<Self, Error> {
-        Self::new(length, 'm')
-    }
-
-    fn new(length: u8, unit: char) -> Result<Self, Error> {
+impl PeriodLength {
+    pub fn new(length: u8) -> Result<Self, Error> {
         match length {
-            1..=99 => Ok(Self { length, unit }),
+            1..=99 => Ok(Self(length)),
             0 | 100.. => Err(Error::Other(
                 "Period length must be greater than 0 and less than 100".into(),
             )),
@@ -180,30 +170,46 @@ impl Period {
     }
 }
 
-pub const ONE_YEAR: Period = Period {
-    unit: 'y',
-    length: 1,
-};
+impl Period {
+    pub fn years(length: u8) -> Result<Self, Error> {
+        PeriodLength::new(length).map(Self::Years)
+    }
 
-pub const TWO_YEARS: Period = Period {
-    unit: 'y',
-    length: 2,
-};
+    pub fn months(length: u8) -> Result<Self, Error> {
+        PeriodLength::new(length).map(Self::Months)
+    }
+}
 
-pub const THREE_YEARS: Period = Period {
-    unit: 'y',
-    length: 3,
-};
+impl ToXml for Period {
+    fn serialize<W: fmt::Write + ?Sized>(
+        &self,
+        _: Option<instant_xml::Id<'_>>,
+        serializer: &mut Serializer<W>,
+    ) -> Result<(), instant_xml::Error> {
+        const ELEMENT: &str = "period";
 
-pub const ONE_MONTH: Period = Period {
-    unit: 'm',
-    length: 1,
-};
+        let (unit, length) = match self {
+            Self::Years(length) => ('y', length.0),
+            Self::Months(length) => ('m', length.0),
+        };
 
-pub const SIX_MONTHS: Period = Period {
-    unit: 'm',
-    length: 6,
-};
+        serializer.write_start(ELEMENT, XMLNS)?;
+        serializer.write_attr("unit", XMLNS, &unit)?;
+        serializer.end_start()?;
+        serializer.write_str(&length)?;
+        serializer.write_close(None, ELEMENT)
+    }
+}
+
+pub const ONE_YEAR: Period = Period::Years(PeriodLength(1));
+
+pub const TWO_YEARS: Period = Period::Years(PeriodLength(2));
+
+pub const THREE_YEARS: Period = Period::Years(PeriodLength(3));
+
+pub const ONE_MONTH: Period = Period::Months(PeriodLength(1));
+
+pub const SIX_MONTHS: Period = Period::Months(PeriodLength(6));
 
 /// The `<authInfo>` tag for domain and contact transactions
 #[derive(Clone, Debug, FromXml, ToXml)]
