@@ -192,7 +192,7 @@ impl<'a> Address<'a> {
 pub struct PostalInfo<'a> {
     /// The 'type' attr on `<postalInfo>`
     #[xml(rename = "type", attribute)]
-    pub info_type: Cow<'a, str>,
+    pub info_type: InfoType,
     /// The `<name>` tag under `<postalInfo>`
     pub name: Cow<'a, str>,
     /// The `<org>` tag under `<postalInfo>`
@@ -205,18 +205,27 @@ pub struct PostalInfo<'a> {
 impl<'a> PostalInfo<'a> {
     /// Creates a new PostalInfo instance
     pub fn new(
-        info_type: &'a str,
+        info_type: InfoType,
         name: &'a str,
         organization: Option<&'a str>,
         address: Address<'a>,
     ) -> Self {
         Self {
-            info_type: info_type.into(),
+            info_type,
             name: name.into(),
             organization: organization.map(|org| org.into()),
             address,
         }
     }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, ToXml, FromXml)]
+#[xml(scalar)]
+pub enum InfoType {
+    #[xml(rename = "loc")]
+    Local,
+    #[xml(rename = "int")]
+    International,
 }
 
 /// The `<status>` type on contact transactions
