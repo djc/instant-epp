@@ -196,14 +196,14 @@ impl<'c, 'e, C: Command, E: Extension> From<(&'c C, &'e E)> for RequestData<'c, 
 }
 
 // Manual impl because this does not depend on whether `C` and `E` are `Clone`
-impl<'c, 'e, C, E> Clone for RequestData<'c, 'e, C, E> {
+impl<C, E> Clone for RequestData<'_, '_, C, E> {
     fn clone(&self) -> Self {
         *self
     }
 }
 
 // Manual impl because this does not depend on whether `C` and `E` are `Copy`
-impl<'c, 'e, C, E> Copy for RequestData<'c, 'e, C, E> {}
+impl<C, E> Copy for RequestData<'_, '_, C, E> {}
 
 #[cfg(feature = "rustls")]
 pub use rustls_connector::RustlsConnector;

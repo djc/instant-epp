@@ -7,9 +7,9 @@ use super::{DomainAuthInfo, DomainContact, HostAttr, NameServers, Status, XMLNS}
 use crate::common::{NoExtension, EPP_XMLNS};
 use crate::request::{Command, Transaction};
 
-impl<'a> Transaction<NoExtension> for DomainInfo<'a> {}
+impl Transaction<NoExtension> for DomainInfo<'_> {}
 
-impl<'a> Command for DomainInfo<'a> {
+impl Command for DomainInfo<'_> {
     type Response = InfoData;
     const COMMAND: &'static str = "info";
 }

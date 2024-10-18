@@ -8,7 +8,7 @@ use crate::{
     request::{Command, Transaction, EPP_LANG, EPP_VERSION},
 };
 
-impl<'a> Transaction<NoExtension> for Login<'a> {}
+impl Transaction<NoExtension> for Login<'_> {}
 
 /// Type corresponding to the `<login>` tag in an EPP XML login request
 #[derive(Debug, Eq, PartialEq, ToXml)]
@@ -71,7 +71,7 @@ impl<'a> Login<'a> {
     }
 }
 
-impl<'a> Command for Login<'a> {
+impl Command for Login<'_> {
     type Response = ();
     const COMMAND: &'static str = "login";
 }

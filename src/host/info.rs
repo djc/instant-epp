@@ -10,9 +10,9 @@ use super::{HostAddr, Status, XMLNS};
 use crate::common::{NoExtension, EPP_XMLNS};
 use crate::request::{Command, Transaction};
 
-impl<'a> Transaction<NoExtension> for HostInfo<'a> {}
+impl Transaction<NoExtension> for HostInfo<'_> {}
 
-impl<'a> Command for HostInfo<'a> {
+impl Command for HostInfo<'_> {
     type Response = InfoData;
     const COMMAND: &'static str = "info";
 }

@@ -44,7 +44,7 @@ impl<'a, E: Extension, D: Transaction<E>> CommandWrapper<'a, D, E> {
     }
 }
 
-impl<'a, D: ToXml, E: ToXml> ToXml for CommandWrapper<'a, D, E> {
+impl<D: ToXml, E: ToXml> ToXml for CommandWrapper<'_, D, E> {
     fn serialize<W: std::fmt::Write + ?Sized>(
         &self,
         _: Option<instant_xml::Id<'_>>,

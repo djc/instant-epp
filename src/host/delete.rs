@@ -6,9 +6,9 @@ use super::XMLNS;
 use crate::common::{NoExtension, EPP_XMLNS};
 use crate::request::{Command, Transaction};
 
-impl<'a> Transaction<NoExtension> for HostDelete<'a> {}
+impl Transaction<NoExtension> for HostDelete<'_> {}
 
-impl<'a> Command for HostDelete<'a> {
+impl Command for HostDelete<'_> {
     type Response = ();
     const COMMAND: &'static str = "delete";
 }

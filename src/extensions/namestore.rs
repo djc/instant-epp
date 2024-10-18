@@ -59,7 +59,7 @@ impl<'a> NameStore<'a> {
     }
 }
 
-impl<'a> Extension for NameStore<'a> {
+impl Extension for NameStore<'_> {
     type Response = NameStore<'static>;
 }
 

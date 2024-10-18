@@ -37,7 +37,7 @@ impl<'a> RgpRestoreReport<'a> {
     }
 }
 
-impl<'a> Extension for Update<RgpRestoreReport<'a>> {
+impl Extension for Update<RgpRestoreReport<'_>> {
     type Response = NoExtension;
 }
 

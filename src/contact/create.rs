@@ -7,9 +7,9 @@ use super::{ContactAuthInfo, Fax, PostalInfo, Voice, XMLNS};
 use crate::common::{NoExtension, EPP_XMLNS};
 use crate::request::{Command, Transaction};
 
-impl<'a> Transaction<NoExtension> for ContactCreate<'a> {}
+impl Transaction<NoExtension> for ContactCreate<'_> {}
 
-impl<'a> Command for ContactCreate<'a> {
+impl Command for ContactCreate<'_> {
     type Response = CreateData;
     const COMMAND: &'static str = "create";
 }

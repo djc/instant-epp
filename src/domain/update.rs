@@ -8,9 +8,9 @@ use crate::{
     request::{Command, Transaction},
 };
 
-impl<'a> Transaction<NoExtension> for DomainUpdate<'a> {}
+impl Transaction<NoExtension> for DomainUpdate<'_> {}
 
-impl<'a> Command for DomainUpdate<'a> {
+impl Command for DomainUpdate<'_> {
     type Response = ();
     const COMMAND: &'static str = "update";
 }

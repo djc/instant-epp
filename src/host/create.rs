@@ -9,9 +9,9 @@ use super::{serialize_host_addrs_option, XMLNS};
 use crate::common::{NoExtension, EPP_XMLNS};
 use crate::request::{Command, Transaction};
 
-impl<'a> Transaction<NoExtension> for HostCreate<'a> {}
+impl Transaction<NoExtension> for HostCreate<'_> {}
 
-impl<'a> Command for HostCreate<'a> {
+impl Command for HostCreate<'_> {
     type Response = CreateData;
     const COMMAND: &'static str = "create";
 }
