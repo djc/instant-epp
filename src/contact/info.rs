@@ -93,7 +93,7 @@ mod tests {
     use chrono::{TimeZone, Utc};
 
     use super::ContactInfo;
-    use crate::contact::Status;
+    use crate::contact::{InfoType, Status};
     use crate::response::ResultCode;
     use crate::tests::{assert_serialized, response_from_file, CLTRID, SUCCESS_MSG, SVTRID};
 
@@ -118,7 +118,7 @@ mod tests {
         assert_eq!(result.id, "eppdev-contact-3");
         assert_eq!(result.roid, "UNDEF-ROID");
         assert_eq!(result.statuses[0], Status::Ok);
-        assert_eq!(result.postal_info.info_type, "loc");
+        assert_eq!(result.postal_info.info_type, InfoType::Local);
         assert_eq!(result.postal_info.name, "John Doe");
         assert_eq!(result.postal_info.organization, Some("Acme Widgets".into()));
         assert_eq!(result.postal_info.address.street[0], "58");
@@ -165,7 +165,7 @@ mod tests {
         assert_eq!(result.id, "eppdev-contact-3");
         assert_eq!(result.roid, "UNDEF-ROID");
         assert_eq!(result.statuses[0], Status::Ok);
-        assert_eq!(result.postal_info.info_type, "loc");
+        assert_eq!(result.postal_info.info_type, InfoType::Local);
         assert_eq!(result.postal_info.name, "John Doe");
         assert_eq!(result.postal_info.organization, None);
         assert_eq!(result.postal_info.address.street[0], "58");
