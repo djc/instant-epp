@@ -1,4 +1,4 @@
-//! https://www.verisign.com/assets/epp-sdk/verisign_epp-extension_rgp-poll_v00.html
+//! <https://www.verisign.com/assets/epp-sdk/verisign_epp-extension_rgp-poll_v00.html>
 
 use chrono::{DateTime, Utc};
 use instant_xml::FromXml;

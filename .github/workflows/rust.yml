@@ -62,7 +62,7 @@ jobs:
           profile: minimal
           toolchain: stable
           override: true
-          components: rustfmt, clippy
+          components: rustfmt, clippy, rust-docs
       - uses: actions-rs/cargo@v1
         with:
           command: fmt
@@ -72,6 +72,12 @@ jobs:
         with:
           command: clippy
           args: --workspace --all-targets --all-features -- -D warnings
+      - uses: actions-rs/cargo@v1
+        env:
+          RUSTDOCFLAGS: "-D warnings"
+        with:
+          command: doc
+          args: --no-deps --all-features --document-private-items
 
   audit:
     runs-on: ubuntu-latest
