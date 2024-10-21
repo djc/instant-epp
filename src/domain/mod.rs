@@ -170,16 +170,6 @@ impl PeriodLength {
     }
 }
 
-impl Period {
-    pub fn years(length: u8) -> Result<Self, Error> {
-        PeriodLength::new(length).map(Self::Years)
-    }
-
-    pub fn months(length: u8) -> Result<Self, Error> {
-        PeriodLength::new(length).map(Self::Months)
-    }
-}
-
 impl ToXml for Period {
     fn serialize<W: fmt::Write + ?Sized>(
         &self,

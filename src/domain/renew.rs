@@ -66,6 +66,7 @@ pub struct RenewData {
 #[cfg(test)]
 mod tests {
     use super::{DomainRenew, Period};
+    use crate::domain::PeriodLength;
     use crate::response::ResultCode;
     use crate::tests::{assert_serialized, response_from_file, CLTRID, SUCCESS_MSG, SVTRID};
 
@@ -74,7 +75,11 @@ mod tests {
     #[test]
     fn command() {
         let exp_date = NaiveDate::from_ymd_opt(2022, 7, 23).unwrap();
-        let object = DomainRenew::new("eppdev.com", exp_date, Period::years(1).unwrap());
+        let object = DomainRenew::new(
+            "eppdev.com",
+            exp_date,
+            Period::Years(PeriodLength::new(1).unwrap()),
+        );
         assert_serialized("request/domain/renew.xml", &object);
     }
 

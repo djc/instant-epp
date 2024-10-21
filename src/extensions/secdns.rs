@@ -371,7 +371,7 @@ impl ToXml for Protocol {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain;
+    use crate::domain::{self, Period, PeriodLength};
     use crate::tests::assert_serialized;
 
     #[test]
@@ -404,7 +404,7 @@ mod tests {
         ];
         let object = domain::DomainCreate::new(
             "example.com",
-            domain::Period::years(2).unwrap(),
+            Period::Years(PeriodLength::new(2).unwrap()),
             Some(&ns),
             Some("jd1234"),
             "2fooBAR",
@@ -452,7 +452,7 @@ mod tests {
         ];
         let object = domain::DomainCreate::new(
             "example.com",
-            domain::Period::years(2).unwrap(),
+            Period::Years(PeriodLength::new(2).unwrap()),
             Some(&ns),
             Some("jd1234"),
             "2fooBAR",
@@ -493,7 +493,7 @@ mod tests {
         ];
         let object = domain::DomainCreate::new(
             "example.com",
-            domain::Period::years(2).unwrap(),
+            Period::Years(PeriodLength::new(2).unwrap()),
             Some(&ns),
             Some("jd1234"),
             "2fooBAR",

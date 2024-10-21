@@ -9,7 +9,7 @@ use tokio::time::timeout;
 use tokio_test::io::Builder;
 
 use instant_epp::client::{Connector, EppClient};
-use instant_epp::domain::{DomainCheck, DomainContact, DomainCreate, Period};
+use instant_epp::domain::{DomainCheck, DomainContact, DomainCreate, Period, PeriodLength};
 use instant_epp::login::Login;
 use instant_epp::response::ResultCode;
 use instant_epp::Error;
@@ -232,7 +232,7 @@ async fn dropped() {
     // remainder of the in-flight request before starting the new one, and succeed.
     let create = DomainCreate::new(
         "eppdev-1.com",
-        Period::years(1).unwrap(),
+        Period::Years(PeriodLength::new(1).unwrap()),
         None,
         Some("eppdev-contact-3"),
         "epP4uthd#v",
