@@ -137,7 +137,7 @@ impl<'a> DsDataType<'a> {
 }
 
 /// DigestAlgorithm identifies the algorithm used to construct the digest
-/// https://www.iana.org/assignments/ds-rr-types/ds-rr-types.xhtml
+/// <https://www.iana.org/assignments/ds-rr-types/ds-rr-types.xhtml>
 #[derive(Clone, Copy, Debug)]
 // XXX Do NOT derive PartialEq, Hash or Ord because the variant
 // Other(u8) could clash with one of the other variants. They have to
@@ -173,7 +173,7 @@ impl ToXml for DigestAlgorithm {
 }
 
 /// Algorithm identifies the public key's cryptographic algorithm
-/// https://www.iana.org/assignments/dns-sec-alg-numbers/dns-sec-alg-numbers.xhtml#dns-sec-alg-numbers-1
+/// <https://www.iana.org/assignments/dns-sec-alg-numbers/dns-sec-alg-numbers.xhtml#dns-sec-alg-numbers-1>
 #[derive(Clone, Copy, Debug)]
 // XXX Do NOT derive PartialEq, Hash or Ord because the variant
 // Other(u8) could clash with one of the other variants. They have to
