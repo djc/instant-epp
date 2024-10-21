@@ -124,13 +124,17 @@ mod tests {
     use chrono::{TimeZone, Utc};
 
     use super::{DomainTransfer, Period};
+    use crate::domain::PeriodLength;
     use crate::response::ResultCode;
     use crate::tests::{assert_serialized, response_from_file, CLTRID, SUCCESS_MSG, SVTRID};
 
     #[test]
     fn request_command() {
-        let object =
-            DomainTransfer::new("testing.com", Some(Period::years(1).unwrap()), "epP4uthd#v");
+        let object = DomainTransfer::new(
+            "testing.com",
+            Some(Period::Years(PeriodLength::new(1).unwrap())),
+            "epP4uthd#v",
+        );
         assert_serialized("request/domain/transfer_request.xml", &object);
     }
 

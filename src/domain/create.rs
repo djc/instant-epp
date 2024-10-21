@@ -90,7 +90,7 @@ mod tests {
     use chrono::{TimeZone, Utc};
 
     use super::{DomainContact, DomainCreate, Period};
-    use crate::domain::{HostAttr, HostInfo, HostObj};
+    use crate::domain::{HostAttr, HostInfo, HostObj, PeriodLength};
     use crate::response::ResultCode;
     use crate::tests::{assert_serialized, response_from_file, CLTRID, SUCCESS_MSG, SVTRID};
 
@@ -113,7 +113,7 @@ mod tests {
 
         let object = DomainCreate::new(
             "eppdev-1.com",
-            Period::years(1).unwrap(),
+            Period::Years(PeriodLength::new(1).unwrap()),
             None,
             Some("eppdev-contact-3"),
             "epP4uthd#v",
@@ -150,7 +150,7 @@ mod tests {
         ];
         let object = DomainCreate::new(
             "eppdev-1.com",
-            Period::years(1).unwrap(),
+            Period::Years(PeriodLength::new(1).unwrap()),
             Some(hosts),
             Some("eppdev-contact-3"),
             "epP4uthd#v",
@@ -193,7 +193,7 @@ mod tests {
 
         let object = DomainCreate::new(
             "eppdev-2.com",
-            Period::years(1).unwrap(),
+            Period::Years(PeriodLength::new(1).unwrap()),
             Some(hosts),
             Some("eppdev-contact-3"),
             "epP4uthd#v",
