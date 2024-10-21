@@ -164,7 +164,7 @@ impl PeriodLength {
         match length {
             1..=99 => Ok(Self(length)),
             0 | 100.. => Err(Error::Other(
-                "Period length must be greater than 0 and less than 100".into(),
+                "period length must be greater than 0 and less than 100".into(),
             )),
         }
     }
