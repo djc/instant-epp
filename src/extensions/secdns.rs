@@ -409,6 +409,19 @@ impl From<Protocol> for u8 {
     }
 }
 
+impl From<u8> for Protocol {
+    fn from(n: u8) -> Self {
+        match n {
+            1 => Self::Tls,
+            2 => Self::Email,
+            3 => Self::Dnssec,
+            4 => Self::Ipsec,
+            255 => Self::All,
+            _ => Self::Other(n),
+        }
+    }
+}
+
 impl ToXml for Protocol {
     fn serialize<W: Write + ?Sized>(
         &self,
