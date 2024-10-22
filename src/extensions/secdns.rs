@@ -159,6 +159,18 @@ impl From<DigestAlgorithm> for u8 {
     }
 }
 
+impl From<u8> for DigestAlgorithm {
+    fn from(n: u8) -> Self {
+        match n {
+            1 => Self::Sha1,
+            2 => Self::Sha256,
+            3 => Self::Gost,
+            4 => Self::Sha384,
+            _ => Self::Other(n),
+        }
+    }
+}
+
 impl ToXml for DigestAlgorithm {
     fn serialize<W: Write + ?Sized>(
         &self,
