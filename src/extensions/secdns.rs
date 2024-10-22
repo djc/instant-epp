@@ -242,6 +242,32 @@ impl From<Algorithm> for u8 {
     }
 }
 
+impl From<u8> for Algorithm {
+    fn from(n: u8) -> Self {
+        match n {
+            0 => Self::Delete,
+            1 => Self::RsaMd5,
+            2 => Self::Dh,
+            3 => Self::Dsa,
+            4 => Self::Ecc,
+            5 => Self::RsaSha1,
+            6 => Self::DsaNsec3Sha1,
+            7 => Self::RsaSha1Nsec3Sha1,
+            8 => Self::RsaSha256,
+            10 => Self::RsaSha512,
+            12 => Self::EccGost,
+            13 => Self::EcdsaP256Sha256,
+            14 => Self::EcdsaP384Sha384,
+            15 => Self::Ed25519,
+            16 => Self::Ed448,
+            252 => Self::Indirect,
+            253 => Self::PrivateDns,
+            254 => Self::PrivateOid,
+            _ => Self::Other(n),
+        }
+    }
+}
+
 impl ToXml for Algorithm {
     fn serialize<W: Write + ?Sized>(
         &self,
