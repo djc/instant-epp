@@ -172,16 +172,7 @@ impl From<u8> for DigestAlgorithm {
 }
 
 crate::xml::from_scalar!(DigestAlgorithm, u8);
-
-impl ToXml for DigestAlgorithm {
-    fn serialize<W: Write + ?Sized>(
-        &self,
-        id: Option<Id<'_>>,
-        serializer: &mut Serializer<'_, W>,
-    ) -> Result<(), Error> {
-        u8::from(*self).serialize(id, serializer)
-    }
-}
+crate::xml::to_scalar!(DigestAlgorithm, u8);
 
 /// Algorithm identifies the public key's cryptographic algorithm
 /// <https://www.iana.org/assignments/dns-sec-alg-numbers/dns-sec-alg-numbers.xhtml#dns-sec-alg-numbers-1>
@@ -282,17 +273,8 @@ impl From<u8> for Algorithm {
     }
 }
 
-impl ToXml for Algorithm {
-    fn serialize<W: Write + ?Sized>(
-        &self,
-        id: Option<Id<'_>>,
-        serializer: &mut Serializer<'_, W>,
-    ) -> Result<(), Error> {
-        u8::from(*self).serialize(id, serializer)
-    }
-}
-
 crate::xml::from_scalar!(Algorithm, u8);
+crate::xml::to_scalar!(Algorithm, u8);
 
 #[derive(Debug, ToXml)]
 #[xml(rename = "keyData", ns(XMLNS))]
@@ -410,17 +392,8 @@ impl From<u8> for Protocol {
     }
 }
 
-impl ToXml for Protocol {
-    fn serialize<W: Write + ?Sized>(
-        &self,
-        id: Option<Id<'_>>,
-        serializer: &mut Serializer<'_, W>,
-    ) -> Result<(), Error> {
-        u8::from(*self).serialize(id, serializer)
-    }
-}
-
 crate::xml::from_scalar!(Protocol, u8);
+crate::xml::to_scalar!(Protocol, u8);
 
 #[cfg(test)]
 mod tests {

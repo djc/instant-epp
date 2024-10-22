@@ -60,3 +60,18 @@ macro_rules! from_scalar {
     };
 }
 pub(crate) use from_scalar;
+
+macro_rules! to_scalar {
+    ($name:ty, $scalar:tt) => {
+        impl ::instant_xml::ToXml for $name {
+            fn serialize<W: Write + ?Sized>(
+                &self,
+                id: Option<Id<'_>>,
+                serializer: &mut Serializer<'_, W>,
+            ) -> Result<(), Error> {
+                $scalar::from(*self).serialize(id, serializer)
+            }
+        }
+    };
+}
+pub(crate) use to_scalar;
