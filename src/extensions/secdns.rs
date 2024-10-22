@@ -303,7 +303,7 @@ impl<'a> KeyDataType<'a> {
     }
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Flags {
     /// Zone Key flag. If `true` then the DNSKEY record holds a DNS
     /// zone key. If `false` then the DNSKEY record holds some other
@@ -314,16 +314,30 @@ pub struct Flags {
     secure_entry_point: bool,
 }
 
+impl Flags {
+    const ZONE_KEY: u16 = 0b1_0000_0000;
+    const SECURE_ENDPOINT: u16 = 0x1;
+}
+
 impl From<Flags> for u16 {
     fn from(flags: Flags) -> Self {
         let mut res = 0;
         if flags.zone_key {
-            res |= 0b1_0000_0000;
+            res |= Flags::ZONE_KEY;
         }
         if flags.secure_entry_point {
-            res |= 0x1;
+            res |= Flags::SECURE_ENDPOINT;
         }
         res
+    }
+}
+
+impl From<u16> for Flags {
+    fn from(n: u16) -> Self {
+        Self {
+            zone_key: (n | Self::ZONE_KEY == n),
+            secure_entry_point: (n | Self::SECURE_ENDPOINT == n),
+        }
     }
 }
 
@@ -400,6 +414,27 @@ mod tests {
     use super::*;
     use crate::domain::{self, Period, PeriodLength};
     use crate::tests::assert_serialized;
+
+    mod flags {
+        use super::*;
+
+        #[test]
+        fn bijectivity() {
+            assert_bijectivity(true, true);
+            assert_bijectivity(true, false);
+            assert_bijectivity(false, false);
+            assert_bijectivity(false, true);
+
+            fn assert_bijectivity(zone_key: bool, secure_entry_point: bool) {
+                let flags = Flags {
+                    zone_key,
+                    secure_entry_point,
+                };
+
+                assert_eq!(flags, u16::from(flags).into())
+            }
+        }
+    }
 
     #[test]
     fn create_ds_data_interface() {
