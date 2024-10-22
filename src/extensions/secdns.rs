@@ -1,7 +1,7 @@
 //! DNS security extensions mapping
 //!
 //! As described in [RFC 5910](https://www.rfc-editor.org/rfc/rfc5910)
-use instant_xml::{Error, FromXml, Id, Kind, Serializer, ToXml};
+use instant_xml::{Error, Id, Serializer, ToXml};
 use std::borrow::Cow;
 use std::fmt::Write;
 use std::time::Duration;
@@ -278,33 +278,7 @@ impl ToXml for Algorithm {
     }
 }
 
-impl<'xml> FromXml<'xml> for Algorithm {
-    fn matches(id: instant_xml::Id<'_>, field: Option<instant_xml::Id<'_>>) -> bool {
-        match field {
-            Some(field) => id == field,
-            None => false,
-        }
-    }
-
-    fn deserialize<'cx>(
-        into: &mut Self::Accumulator,
-        field: &'static str,
-        deserializer: &mut instant_xml::Deserializer<'cx, 'xml>,
-    ) -> Result<(), instant_xml::Error> {
-        let mut value = None;
-
-        u8::deserialize(&mut value, field, deserializer)?;
-
-        if let Some(value) = value {
-            *into = Some(Self::from(value));
-        }
-
-        Ok(())
-    }
-
-    type Accumulator = Option<Self>;
-    const KIND: instant_xml::Kind = Kind::Scalar;
-}
+crate::xml::from_scalar!(Algorithm, u8);
 
 #[derive(Debug, ToXml)]
 #[xml(rename = "keyData", ns(XMLNS))]
