@@ -171,6 +171,8 @@ impl From<u8> for DigestAlgorithm {
     }
 }
 
+crate::xml::from_scalar!(DigestAlgorithm, u8);
+
 impl ToXml for DigestAlgorithm {
     fn serialize<W: Write + ?Sized>(
         &self,
