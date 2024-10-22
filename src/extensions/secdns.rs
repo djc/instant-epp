@@ -406,6 +406,8 @@ impl ToXml for Protocol {
     }
 }
 
+crate::xml::from_scalar!(Protocol, u8);
+
 #[cfg(test)]
 mod tests {
     use super::*;
