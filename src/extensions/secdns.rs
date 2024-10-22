@@ -68,33 +68,30 @@ impl<'a> From<(Duration, &'a [KeyDataType<'a>])> for CreateData<'a> {
 }
 
 /// Struct supporting either the `dsData` or the `keyData` interface.
-#[derive(Debug)]
+#[derive(Debug, ToXml)]
+#[xml(transparent)]
 pub struct DsOrKeyType<'a> {
+    #[xml(serialize_with = "serialize_lifetime_duration")]
     maximum_signature_lifetime: Option<Duration>,
     data: DsOrKeyData<'a>,
 }
 
-impl ToXml for DsOrKeyType<'_> {
-    fn serialize<W: Write + ?Sized>(
-        &self,
-        _: Option<Id<'_>>,
-        serializer: &mut Serializer<'_, W>,
-    ) -> Result<(), Error> {
-        if let Some(maximum_signature_lifetime) = self.maximum_signature_lifetime {
-            let nc_name = "maxSigLife";
-            let prefix = serializer.write_start(nc_name, XMLNS)?;
-            serializer.end_start()?;
-            maximum_signature_lifetime
-                .as_secs()
-                .serialize(None, serializer)?;
-            serializer.write_close(prefix, nc_name)?;
-        }
-        match &self.data {
-            DsOrKeyData::DsData(data) => data.serialize(None, serializer)?,
-            DsOrKeyData::KeyData(data) => data.serialize(None, serializer)?,
-        }
-        Ok(())
-    }
+pub(crate) fn serialize_lifetime_duration<W: std::fmt::Write + ?Sized>(
+    duration: &Option<Duration>,
+    serializer: &mut Serializer<'_, W>,
+) -> Result<(), instant_xml::Error> {
+    const ELEMENT_NAME: &str = "maxSigLife";
+
+    let Some(duration) = duration.as_ref() else {
+        return Ok(());
+    };
+
+    let prefix = serializer.write_start(ELEMENT_NAME, XMLNS)?;
+    serializer.end_start()?;
+
+    duration.as_secs().serialize(None, serializer)?;
+
+    serializer.write_close(prefix, ELEMENT_NAME)
 }
 
 #[derive(Debug, ToXml)]
