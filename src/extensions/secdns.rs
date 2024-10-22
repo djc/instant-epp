@@ -341,15 +341,8 @@ impl From<u16> for Flags {
     }
 }
 
-impl ToXml for Flags {
-    fn serialize<W: Write + ?Sized>(
-        &self,
-        id: Option<Id<'_>>,
-        serializer: &mut Serializer<'_, W>,
-    ) -> Result<(), Error> {
-        u16::from(*self).serialize(id, serializer)
-    }
-}
+crate::xml::from_scalar!(Flags, u16);
+crate::xml::to_scalar!(Flags, u16);
 
 /// `Flags` for a zone signing key.
 pub const FLAGS_DNS_ZONE_KEY: Flags = Flags {
