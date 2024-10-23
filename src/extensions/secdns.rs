@@ -71,6 +71,21 @@ impl<'a> From<(Duration, &'a [KeyDataType<'a>])> for CreateData<'a> {
     }
 }
 
+impl Transaction<InfoData> for crate::domain::info::DomainInfo<'_> {}
+
+#[derive(Debug, ToXml)]
+pub struct InfoData;
+
+#[derive(Debug, FromXml)]
+#[xml(rename = "infData", ns(XMLNS))]
+pub struct InfoDataResponse<'a> {
+    pub data: DsOrKeyType<'a>,
+}
+
+impl Extension for InfoData {
+    type Response = InfoDataResponse<'static>;
+}
+
 /// Struct supporting either the `dsData` or the `keyData` interface.
 #[derive(Debug, ToXml, FromXml)]
 #[xml(transparent)]
@@ -126,7 +141,7 @@ impl<'xml> FromXml<'xml> for MaximumSignatureLifeTime {
     }
 
     type Accumulator = Option<Self>;
-    const KIND: instant_xml::Kind = instant_xml::Kind::Element;
+    const KIND: instant_xml::Kind = instant_xml::Kind::Scalar;
 }
 
 #[derive(Debug, ToXml, FromXml)]
@@ -440,8 +455,8 @@ crate::xml::to_scalar!(Protocol, u8);
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::{self, Period, PeriodLength};
-    use crate::tests::assert_serialized;
+    use crate::domain::{self, DomainInfo, Period, PeriodLength};
+    use crate::tests::{assert_serialized, response_from_file_with_ext};
 
     mod maximum_signature_lifetime {
         use super::*;
@@ -477,15 +492,28 @@ mod tests {
         }
     }
 
-    #[test]
-    fn create_ds_data_interface() {
-        let ds_data = [DsDataType::new(
+    fn mock_key_data() -> KeyDataType<'static> {
+        KeyDataType::new(
+            FLAGS_DNS_ZONE_KEY_SEP,
+            Protocol::Dnssec,
+            Algorithm::RsaMd5,
+            "AQPJ////4Q==",
+        )
+    }
+
+    fn mock_ds_data(key_data: Option<KeyDataType<'static>>) -> DsDataType<'static> {
+        DsDataType::new(
             12345,
             Algorithm::Dsa,
             DigestAlgorithm::Sha1,
             "49FD46E6C4B45C55D4AC",
-            None,
-        )];
+            key_data,
+        )
+    }
+
+    #[test]
+    fn create_ds_data_interface() {
+        let ds_data = [mock_ds_data(None)];
         let extension = CreateData::from((Duration::from_secs(604800), ds_data.as_ref()));
         let ns = [
             domain::HostInfo::Obj(domain::HostObj {
@@ -521,19 +549,8 @@ mod tests {
 
     #[test]
     fn create_ds_and_key_data_interface() {
-        let key_data = KeyDataType::new(
-            FLAGS_DNS_ZONE_KEY_SEP,
-            Protocol::Dnssec,
-            Algorithm::Dsa,
-            "AQPJ////4Q==",
-        );
-        let ds_data = [DsDataType::new(
-            12345,
-            Algorithm::Dsa,
-            DigestAlgorithm::Sha1,
-            "49FD46E6C4B45C55D4AC",
-            Some(key_data),
-        )];
+        let ds_data = [mock_ds_data(Some(mock_key_data()))];
+
         let extension = CreateData::from((Duration::from_secs(604800), ds_data.as_ref()));
         let ns = [
             domain::HostInfo::Obj(domain::HostObj {
@@ -569,12 +586,7 @@ mod tests {
 
     #[test]
     fn create_key_data_interface() {
-        let key_data = [KeyDataType::new(
-            FLAGS_DNS_ZONE_KEY_SEP,
-            Protocol::Dnssec,
-            Algorithm::RsaMd5,
-            "AQPJ////4Q==",
-        )];
+        let key_data = [mock_key_data()];
         let extension = CreateData::from(key_data.as_ref());
         let ns = [
             domain::HostInfo::Obj(domain::HostObj {
@@ -605,6 +617,20 @@ mod tests {
         assert_serialized(
             "request/extensions/secdns_create_key.xml",
             (&object, &extension),
+        );
+    }
+
+    #[test]
+    fn info_ds_data_interface() {
+        response_from_file_with_ext::<DomainInfo, InfoData>(
+            "response/extensions/secdns_info_ds.xml",
+        );
+    }
+
+    #[test]
+    fn info_key_data_interface() {
+        response_from_file_with_ext::<DomainInfo, InfoData>(
+            "response/extensions/secdns_info_key.xml",
         );
     }
 }
