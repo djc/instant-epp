@@ -28,7 +28,7 @@ impl<'a> From<&'a [DsDataType<'a>]> for CreateData<'a> {
         Self {
             data: DsOrKeyType {
                 maximum_signature_lifetime: None,
-                data: DsOrKeyData::DsData(s),
+                data: DsOrKeyData::DsData(Cow::Borrowed(s)),
             },
         }
     }
@@ -39,7 +39,7 @@ impl<'a> From<&'a [KeyDataType<'a>]> for CreateData<'a> {
         Self {
             data: DsOrKeyType {
                 maximum_signature_lifetime: None,
-                data: DsOrKeyData::KeyData(s),
+                data: DsOrKeyData::KeyData(Cow::Borrowed(s)),
             },
         }
     }
@@ -52,7 +52,7 @@ impl<'a> From<(Duration, &'a [DsDataType<'a>])> for CreateData<'a> {
                 maximum_signature_lifetime: Some(MaximumSignatureLifeTime(
                     maximum_signature_lifetime,
                 )),
-                data: DsOrKeyData::DsData(data),
+                data: DsOrKeyData::DsData(Cow::Borrowed(data)),
             },
         }
     }
@@ -65,14 +65,14 @@ impl<'a> From<(Duration, &'a [KeyDataType<'a>])> for CreateData<'a> {
                 maximum_signature_lifetime: Some(MaximumSignatureLifeTime(
                     maximum_signature_lifetime,
                 )),
-                data: DsOrKeyData::KeyData(data),
+                data: DsOrKeyData::KeyData(Cow::Borrowed(data)),
             },
         }
     }
 }
 
 /// Struct supporting either the `dsData` or the `keyData` interface.
-#[derive(Debug, ToXml)]
+#[derive(Debug, ToXml, FromXml)]
 #[xml(transparent)]
 pub struct DsOrKeyType<'a> {
     maximum_signature_lifetime: Option<MaximumSignatureLifeTime>,
@@ -129,14 +129,14 @@ impl<'xml> FromXml<'xml> for MaximumSignatureLifeTime {
     const KIND: instant_xml::Kind = instant_xml::Kind::Element;
 }
 
-#[derive(Debug, ToXml)]
+#[derive(Debug, ToXml, FromXml)]
 #[xml(forward)]
 pub enum DsOrKeyData<'a> {
-    DsData(&'a [DsDataType<'a>]),
-    KeyData(&'a [KeyDataType<'a>]),
+    DsData(Cow<'a, [DsDataType<'a>]>),
+    KeyData(Cow<'a, [KeyDataType<'a>]>),
 }
 
-#[derive(Debug, ToXml)]
+#[derive(Debug, Clone, ToXml, FromXml)]
 #[xml(rename = "dsData", ns(XMLNS))]
 pub struct DsDataType<'a> {
     #[xml(rename = "keyTag")]
@@ -311,7 +311,7 @@ impl From<u8> for Algorithm {
 crate::xml::from_scalar!(Algorithm, u8);
 crate::xml::to_scalar!(Algorithm, u8);
 
-#[derive(Debug, ToXml)]
+#[derive(Debug, Clone, ToXml, FromXml)]
 #[xml(rename = "keyData", ns(XMLNS))]
 pub struct KeyDataType<'a> {
     flags: Flags,
