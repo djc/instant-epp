@@ -1,7 +1,7 @@
 //! DNS security extensions mapping
 //!
 //! As described in [RFC 5910](https://www.rfc-editor.org/rfc/rfc5910)
-use instant_xml::{Error, Id, Serializer, ToXml};
+use instant_xml::{Error, FromXml, Id, Serializer, ToXml};
 use std::borrow::Cow;
 use std::fmt::Write;
 use std::time::Duration;
@@ -79,8 +79,12 @@ pub struct DsOrKeyType<'a> {
     data: DsOrKeyData<'a>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct MaximumSignatureLifeTime(pub Duration);
+
+impl MaximumSignatureLifeTime {
+    const ELEMENT_NAME: &str = "maxSigLife";
+}
 
 impl ToXml for MaximumSignatureLifeTime {
     fn serialize<W: std::fmt::Write + ?Sized>(
@@ -88,15 +92,41 @@ impl ToXml for MaximumSignatureLifeTime {
         _: Option<Id<'_>>,
         serializer: &mut Serializer<W>,
     ) -> Result<(), Error> {
-        const ELEMENT_NAME: &str = "maxSigLife";
-
-        let prefix = serializer.write_start(ELEMENT_NAME, XMLNS)?;
+        let prefix = serializer.write_start(Self::ELEMENT_NAME, XMLNS)?;
         serializer.end_start()?;
 
         self.0.as_secs().serialize(None, serializer)?;
 
-        serializer.write_close(prefix, ELEMENT_NAME)
+        serializer.write_close(prefix, Self::ELEMENT_NAME)
     }
+}
+
+impl<'xml> FromXml<'xml> for MaximumSignatureLifeTime {
+    fn matches(id: Id<'_>, _: Option<Id<'_>>) -> bool {
+        id == instant_xml::Id {
+            ns: XMLNS,
+            name: Self::ELEMENT_NAME,
+        }
+    }
+
+    fn deserialize<'cx>(
+        into: &mut Self::Accumulator,
+        field: &'static str,
+        deserializer: &mut instant_xml::Deserializer<'cx, 'xml>,
+    ) -> Result<(), Error> {
+        let mut value = <Option<u64> as FromXml<'xml>>::Accumulator::default();
+
+        instant_xml::from_xml_str(value.get_mut(), field, deserializer)?;
+
+        if let Some(duration_seconds) = value.get_mut() {
+            *into = Some(Self(Duration::from_secs(*duration_seconds)));
+        }
+
+        Ok(())
+    }
+
+    type Accumulator = Option<Self>;
+    const KIND: instant_xml::Kind = instant_xml::Kind::Element;
 }
 
 #[derive(Debug, ToXml)]
@@ -412,6 +442,19 @@ mod tests {
     use super::*;
     use crate::domain::{self, Period, PeriodLength};
     use crate::tests::assert_serialized;
+
+    mod maximum_signature_lifetime {
+        use super::*;
+
+        #[test]
+        fn serialization() {
+            let v = Some(MaximumSignatureLifeTime(Duration::from_secs(10)));
+            let xml = r#"<maxSigLife xmlns="urn:ietf:params:xml:ns:secDNS-1.1">10</maxSigLife>"#;
+
+            assert_eq!(xml, instant_xml::to_string(&v).unwrap());
+            assert_eq!(v, instant_xml::from_str(xml).unwrap());
+        }
+    }
 
     mod flags {
         use super::*;
