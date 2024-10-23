@@ -49,7 +49,9 @@ impl<'a> From<(Duration, &'a [DsDataType<'a>])> for CreateData<'a> {
     fn from((maximum_signature_lifetime, data): (Duration, &'a [DsDataType<'a>])) -> Self {
         Self {
             data: DsOrKeyType {
-                maximum_signature_lifetime: Some(maximum_signature_lifetime),
+                maximum_signature_lifetime: Some(MaximumSignatureLifeTime(
+                    maximum_signature_lifetime,
+                )),
                 data: DsOrKeyData::DsData(data),
             },
         }
@@ -60,7 +62,9 @@ impl<'a> From<(Duration, &'a [KeyDataType<'a>])> for CreateData<'a> {
     fn from((maximum_signature_lifetime, data): (Duration, &'a [KeyDataType<'a>])) -> Self {
         Self {
             data: DsOrKeyType {
-                maximum_signature_lifetime: Some(maximum_signature_lifetime),
+                maximum_signature_lifetime: Some(MaximumSignatureLifeTime(
+                    maximum_signature_lifetime,
+                )),
                 data: DsOrKeyData::KeyData(data),
             },
         }
@@ -71,27 +75,28 @@ impl<'a> From<(Duration, &'a [KeyDataType<'a>])> for CreateData<'a> {
 #[derive(Debug, ToXml)]
 #[xml(transparent)]
 pub struct DsOrKeyType<'a> {
-    #[xml(serialize_with = "serialize_lifetime_duration")]
-    maximum_signature_lifetime: Option<Duration>,
+    maximum_signature_lifetime: Option<MaximumSignatureLifeTime>,
     data: DsOrKeyData<'a>,
 }
 
-pub(crate) fn serialize_lifetime_duration<W: std::fmt::Write + ?Sized>(
-    duration: &Option<Duration>,
-    serializer: &mut Serializer<'_, W>,
-) -> Result<(), instant_xml::Error> {
-    const ELEMENT_NAME: &str = "maxSigLife";
+#[derive(Debug)]
+pub struct MaximumSignatureLifeTime(pub Duration);
 
-    let Some(duration) = duration.as_ref() else {
-        return Ok(());
-    };
+impl ToXml for MaximumSignatureLifeTime {
+    fn serialize<W: std::fmt::Write + ?Sized>(
+        &self,
+        _: Option<Id<'_>>,
+        serializer: &mut Serializer<W>,
+    ) -> Result<(), Error> {
+        const ELEMENT_NAME: &str = "maxSigLife";
 
-    let prefix = serializer.write_start(ELEMENT_NAME, XMLNS)?;
-    serializer.end_start()?;
+        let prefix = serializer.write_start(ELEMENT_NAME, XMLNS)?;
+        serializer.end_start()?;
 
-    duration.as_secs().serialize(None, serializer)?;
+        self.0.as_secs().serialize(None, serializer)?;
 
-    serializer.write_close(prefix, ELEMENT_NAME)
+        serializer.write_close(prefix, ELEMENT_NAME)
+    }
 }
 
 #[derive(Debug, ToXml)]
