@@ -1,13 +1,12 @@
 [licenses]
-allow-osi-fsf-free = "either"
-copyleft = "deny"
-allow = ["MPL-2.0"]
-
-[advisories]
-ignore = ["RUSTSEC-2020-0071"]
-unsound = "deny"
-unmaintained = "deny"
-yanked = "deny"
+allow = [
+    "Apache-2.0",
+    "BSD-3-Clause",
+    "ISC",
+    "MIT",
+    "OpenSSL",
+    "Unicode-DFS-2016",
+]
 
 [[licenses.clarify]]
 name = "ring"
