@@ -279,7 +279,7 @@ mod rustls_connector {
 
         pub async fn new_with_clientconfig(
             server: (String, u16),
-            config: ClientConfig
+            config: ClientConfig,
         ) -> Result<Self, Error> {
             let domain = ServerName::try_from(server.0.as_str())
                 .map_err(|_| {
