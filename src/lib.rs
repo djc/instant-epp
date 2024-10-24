@@ -39,6 +39,8 @@ pub mod client;
 pub mod common;
 pub mod connection;
 pub mod contact;
+#[cfg(feature = "rustls")]
+pub mod dangerous;
 pub mod domain;
 mod error;
 pub mod hello;
