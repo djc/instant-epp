@@ -18,23 +18,19 @@
 ///    let mut client = EppClient::new(con, "tld".to_string(), timeout).await.expect("CLIENT");
 ///
 ///
-
-
 use crate::error::Error;
-use rustls_pki_types::{CertificateDer, ServerName, UnixTime};
 use rustls_native_certs::CertificateResult;
+use rustls_pki_types::{CertificateDer, ServerName, UnixTime};
 use std::sync::Arc;
-use tokio_rustls::rustls::{ClientConfig, RootCertStore};
-use tokio_rustls::rustls::client::danger::*; 
+use tokio_rustls::rustls::client::danger::*;
 use tokio_rustls::rustls::DigitallySignedStruct;
 use tokio_rustls::rustls::SignatureScheme;
-
+use tokio_rustls::rustls::{ClientConfig, RootCertStore};
 
 /// generate a ClientConfig which utilizes NonVerifyingCertVerifier for certificate validation.
 /// WARNING: highly unsafe !!!
 ///
-pub fn generate_non_verifying_config(
-) -> Result<ClientConfig, Error> {
+pub fn generate_non_verifying_config() -> Result<ClientConfig, Error> {
     let mut roots = RootCertStore::empty();
     let CertificateResult {
         certs, mut errors, ..
@@ -44,18 +40,21 @@ pub fn generate_non_verifying_config(
     }
 
     for cert in certs {
-        roots.add(cert).map_err(|err| {
-            Box::new(err) as Box<dyn std::error::Error + Send + Sync + 'static>
-        })?;
+        roots
+            .add(cert)
+            .map_err(|err| Box::new(err) as Box<dyn std::error::Error + Send + Sync + 'static>)?;
     }
 
-    let mut config = ClientConfig::builder().with_root_certificates(roots).with_no_client_auth();
-    config.dangerous().set_certificate_verifier(Arc::new(NonVerifyingCertVerifier {}));
-    Ok( config )
+    let mut config = ClientConfig::builder()
+        .with_root_certificates(roots)
+        .with_no_client_auth();
+    config
+        .dangerous()
+        .set_certificate_verifier(Arc::new(NonVerifyingCertVerifier {}));
+    Ok(config)
 }
 
-
-/// NonVerifyingCertVerifier can be used as an alternative to the default 
+/// NonVerifyingCertVerifier can be used as an alternative to the default
 /// ServerCertVerifyer.
 /// This specific implementation does not perform any validations.
 /// The verificators just return its specific verified assertion.
@@ -78,7 +77,6 @@ impl ServerCertVerifier for NonVerifyingCertVerifier {
         Ok(ServerCertVerified::assertion())
     }
 
-
     fn verify_tls12_signature(
         &self,
         _message: &[u8],
@@ -86,7 +84,7 @@ impl ServerCertVerifier for NonVerifyingCertVerifier {
         _dss: &DigitallySignedStruct,
     ) -> Result<HandshakeSignatureValid, tokio_rustls::rustls::Error> {
         // unconditional success
-      Ok(HandshakeSignatureValid::assertion())
+        Ok(HandshakeSignatureValid::assertion())
     }
 
     fn verify_tls13_signature(
@@ -101,18 +99,20 @@ impl ServerCertVerifier for NonVerifyingCertVerifier {
 
     fn supported_verify_schemes(&self) -> Vec<SignatureScheme> {
         // add all possible algos
-        vec![SignatureScheme::RSA_PKCS1_SHA1,
-             SignatureScheme::ECDSA_SHA1_Legacy,
-             SignatureScheme::RSA_PKCS1_SHA256,
-             SignatureScheme::ECDSA_NISTP256_SHA256,
-             SignatureScheme::RSA_PKCS1_SHA384,
-             SignatureScheme::ECDSA_NISTP384_SHA384,
-             SignatureScheme::RSA_PKCS1_SHA512,
-             SignatureScheme::ECDSA_NISTP521_SHA512,
-             SignatureScheme::RSA_PSS_SHA256,
-             SignatureScheme::RSA_PSS_SHA384,
-             SignatureScheme::RSA_PSS_SHA512,
-             SignatureScheme::ED25519,
-             SignatureScheme::ED448]
+        vec![
+            SignatureScheme::RSA_PKCS1_SHA1,
+            SignatureScheme::ECDSA_SHA1_Legacy,
+            SignatureScheme::RSA_PKCS1_SHA256,
+            SignatureScheme::ECDSA_NISTP256_SHA256,
+            SignatureScheme::RSA_PKCS1_SHA384,
+            SignatureScheme::ECDSA_NISTP384_SHA384,
+            SignatureScheme::RSA_PKCS1_SHA512,
+            SignatureScheme::ECDSA_NISTP521_SHA512,
+            SignatureScheme::RSA_PSS_SHA256,
+            SignatureScheme::RSA_PSS_SHA384,
+            SignatureScheme::RSA_PSS_SHA512,
+            SignatureScheme::ED25519,
+            SignatureScheme::ED448,
+        ]
     }
 }
