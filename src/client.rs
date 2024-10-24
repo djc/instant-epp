@@ -276,6 +276,26 @@ mod rustls_connector {
                 server,
             })
         }
+
+        pub async fn new_with_clientconfig(
+            server: (String, u16),
+            config: ClientConfig
+        ) -> Result<Self, Error> {
+            let domain = ServerName::try_from(server.0.as_str())
+                .map_err(|_| {
+                    io::Error::new(
+                        io::ErrorKind::InvalidInput,
+                        format!("invalid domain: {}", server.0),
+                    )
+                })?
+                .to_owned();
+
+            Ok(Self {
+                inner: TlsConnector::from(Arc::new(config)),
+                domain,
+                server,
+            })
+        }
     }
 
     #[async_trait]
