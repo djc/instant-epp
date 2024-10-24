@@ -86,6 +86,114 @@ impl Extension for InfoData {
     type Response = InfoDataResponse<'static>;
 }
 
+pub use update::{RemoveData, UpdateData};
+mod update {
+    use super::*;
+
+    impl Transaction<UpdateData<'_>> for crate::domain::update::DomainUpdate<'_> {}
+
+    impl Extension for UpdateData<'_> {
+        type Response = NoExtension;
+    }
+
+    // NOTE: Per RFC 5910 (paraphased): "At least one add, rem, or change element MUST be provided."
+    // Feels excessive to enforce this with the type system, this will do for now.
+    #[derive(Debug)]
+    pub struct UpdateData<'a> {
+        /// Ask the server operator to process the request with high priority
+        ///
+        /// "High priority" is relative to standard server operator policies
+        /// that are determined using an out-of-band mechanism
+        // NOTE: Option<bool> in RFC
+        pub urgent: bool,
+        /// Remove security information from a delegation
+        pub remove: Option<RemoveData<'a>>,
+        /// Add security information to a delegation
+        pub add: Option<DsOrKeyData<'a>>,
+        /// Change existing security information
+        // NOTE: Should be Option<Option<Max...>> for full RFC compliance
+        pub change: Option<MaximumSignatureLifeTime>,
+    }
+
+    impl ToXml for UpdateData<'_> {
+        fn serialize<W: std::fmt::Write + ?Sized>(
+            &self,
+            field: Option<Id<'_>>,
+            serializer: &mut Serializer<W>,
+        ) -> Result<(), Error> {
+            const ELEMENT: &str = "update";
+            // Opening tag
+            serializer.write_start(ELEMENT, XMLNS)?;
+            if self.urgent {
+                serializer.write_attr("urgent", serializer.default_ns(), "true")?;
+            }
+            let old_context = serializer.push(instant_xml::ser::Context {
+                default_ns: XMLNS,
+                prefixes: [instant_xml::ser::Prefix {
+                    prefix: "",
+                    ns: XMLNS,
+                }],
+            })?;
+            serializer.end_start()?;
+
+            serialize_nested("rem", self.remove.as_ref(), field, serializer)?;
+            serialize_nested("add", self.add.as_ref(), field, serializer)?;
+            serialize_nested("chg", self.change.as_ref(), field, serializer)?;
+
+            serializer.pop(old_context);
+
+            serializer.write_close(None, ELEMENT)?;
+
+            return Ok(());
+
+            fn serialize_nested<T: ToXml, W: std::fmt::Write + ?Sized>(
+                element_name: &str,
+                action: Option<&T>,
+                field: Option<Id<'_>>,
+                serializer: &mut Serializer<W>,
+            ) -> Result<(), Error> {
+                if let Some(action_data) = action {
+                    serializer.write_start(element_name, serializer.default_ns())?;
+                    serializer.end_start()?;
+                    action_data.serialize(field, serializer)?;
+                    serializer.write_close(None, element_name)?;
+                }
+
+                Ok(())
+            }
+        }
+    }
+
+    #[derive(Debug)]
+    pub enum RemoveData<'a> {
+        All,
+        DsOrKey(DsOrKeyData<'a>),
+    }
+
+    impl ToXml for RemoveData<'_> {
+        fn serialize<W: std::fmt::Write + ?Sized>(
+            &self,
+            field: Option<Id<'_>>,
+            serializer: &mut Serializer<W>,
+        ) -> Result<(), Error> {
+            match self {
+                RemoveData::All => {
+                    const ELEMENT: &str = "all";
+                    serializer.write_start(ELEMENT, XMLNS)?;
+                    serializer.end_start()?;
+                    serializer.write_str("true")?;
+                    serializer.write_close(None, ELEMENT)?;
+                }
+                RemoveData::DsOrKey(ds_or_key_data) => {
+                    ds_or_key_data.serialize(field, serializer)?;
+                }
+            }
+
+            Ok(())
+        }
+    }
+}
+
 /// Struct supporting either the `dsData` or the `keyData` interface.
 #[derive(Debug, ToXml, FromXml)]
 #[xml(transparent)]
@@ -632,5 +740,110 @@ mod tests {
         response_from_file_with_ext::<DomainInfo, InfoData>(
             "response/extensions/secdns_info_key.xml",
         );
+    }
+
+    mod update {
+        use std::borrow::Cow;
+
+        use domain::DomainUpdate;
+
+        use super::*;
+
+        #[test]
+        fn add_ds_remove_ds() {
+            let ds = [mock_ds_data(None)];
+            let ds_other = [mock_ds_other()];
+
+            let extension = UpdateData {
+                urgent: false,
+                remove: Some(RemoveData::DsOrKey(DsOrKeyData::DsData(Cow::Borrowed(&ds)))),
+                add: Some(DsOrKeyData::DsData(Cow::Borrowed(&ds_other))),
+                change: None,
+            };
+
+            assert_serialized(
+                "request/extensions/secdns_update_add_ds_rem_ds.xml",
+                (&mock_domain_update(), &extension),
+            );
+        }
+
+        #[test]
+        fn change() {
+            let extension = UpdateData {
+                urgent: false,
+                remove: None,
+                add: None,
+                change: mock_sig_life(),
+            };
+
+            assert_serialized(
+                "request/extensions/secdns_update_chg.xml",
+                (&mock_domain_update(), &extension),
+            );
+        }
+
+        #[test]
+        fn remove_all_urgent() {
+            let extension = UpdateData {
+                urgent: true,
+                remove: Some(RemoveData::All),
+                add: None,
+                change: None,
+            };
+
+            assert_serialized(
+                "request/extensions/secdns_update_rem_all_urgent.xml",
+                (&mock_domain_update(), &extension),
+            );
+        }
+
+        #[test]
+        fn remove_ks_add_ks_change() {
+            let ks = [mock_key_data()];
+            let ks_other = [mock_key_other()];
+
+            let extension = UpdateData {
+                urgent: false,
+                remove: Some(RemoveData::DsOrKey(DsOrKeyData::KeyData(Cow::Borrowed(
+                    &ks_other,
+                )))),
+                add: Some(DsOrKeyData::KeyData(Cow::Borrowed(&ks))),
+                change: mock_sig_life(),
+            };
+
+            assert_serialized(
+                "request/extensions/secdns_update_rem_ks_add_ks_chg.xml",
+                (&mock_domain_update(), &extension),
+            );
+        }
+
+        fn mock_domain_update() -> DomainUpdate<'static> {
+            DomainUpdate {
+                domain: domain::update::DomainUpdateRequestData {
+                    name: "example.com",
+                    add: None,
+                    remove: None,
+                    change_info: None,
+                },
+            }
+        }
+
+        fn mock_key_other() -> KeyDataType<'static> {
+            KeyDataType {
+                public_key: Cow::Borrowed("AQPJ////4QQQ"),
+                ..mock_key_data()
+            }
+        }
+
+        fn mock_ds_other() -> DsDataType<'static> {
+            DsDataType {
+                key_tag: 12346,
+                ..mock_ds_data(None)
+            }
+        }
+
+        fn mock_sig_life() -> Option<MaximumSignatureLifeTime> {
+            Some(MaximumSignatureLifeTime(Duration::from_secs(605900)))
+        }
     }
 }

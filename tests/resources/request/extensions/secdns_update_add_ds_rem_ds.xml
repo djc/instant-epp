@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<epp xmlns="urn:ietf:params:xml:ns:epp-1.0">
+ <command>
+   <update>
+     <update xmlns="urn:ietf:params:xml:ns:domain-1.0">
+       <name>example.com</name>
+     </update>
+   </update>
+   <extension>
+     <update xmlns="urn:ietf:params:xml:ns:secDNS-1.1">
+       <rem>
+         <dsData>
+           <keyTag>12345</keyTag>
+           <alg>3</alg>
+           <digestType>1</digestType>
+           <digest>49FD46E6C4B45C55D4AC</digest>
+         </dsData>
+       </rem>
+       <add>
+         <dsData>
+           <keyTag>12346</keyTag>
+           <alg>3</alg>
+           <digestType>1</digestType>
+           <digest>49FD46E6C4B45C55D4AC</digest>
+         </dsData>
+       </add>
+     </update>
+   </extension>
+   <clTRID>cltrid:1626454866</clTRID>
+ </command>
+</epp>
