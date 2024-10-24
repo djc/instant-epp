@@ -1,7 +1,7 @@
 //! DNS security extensions mapping
 //!
 //! As described in [RFC 5910](https://www.rfc-editor.org/rfc/rfc5910)
-use instant_xml::{Error, Id, Serializer, ToXml};
+use instant_xml::{Error, FromXml, Id, Serializer, ToXml};
 use std::borrow::Cow;
 use std::fmt::Write;
 use std::time::Duration;
@@ -28,7 +28,7 @@ impl<'a> From<&'a [DsDataType<'a>]> for CreateData<'a> {
         Self {
             data: DsOrKeyType {
                 maximum_signature_lifetime: None,
-                data: DsOrKeyData::DsData(s),
+                data: DsOrKeyData::DsData(Cow::Borrowed(s)),
             },
         }
     }
@@ -39,7 +39,7 @@ impl<'a> From<&'a [KeyDataType<'a>]> for CreateData<'a> {
         Self {
             data: DsOrKeyType {
                 maximum_signature_lifetime: None,
-                data: DsOrKeyData::KeyData(s),
+                data: DsOrKeyData::KeyData(Cow::Borrowed(s)),
             },
         }
     }
@@ -49,8 +49,10 @@ impl<'a> From<(Duration, &'a [DsDataType<'a>])> for CreateData<'a> {
     fn from((maximum_signature_lifetime, data): (Duration, &'a [DsDataType<'a>])) -> Self {
         Self {
             data: DsOrKeyType {
-                maximum_signature_lifetime: Some(maximum_signature_lifetime),
-                data: DsOrKeyData::DsData(data),
+                maximum_signature_lifetime: Some(MaximumSignatureLifeTime(
+                    maximum_signature_lifetime,
+                )),
+                data: DsOrKeyData::DsData(Cow::Borrowed(data)),
             },
         }
     }
@@ -60,51 +62,204 @@ impl<'a> From<(Duration, &'a [KeyDataType<'a>])> for CreateData<'a> {
     fn from((maximum_signature_lifetime, data): (Duration, &'a [KeyDataType<'a>])) -> Self {
         Self {
             data: DsOrKeyType {
-                maximum_signature_lifetime: Some(maximum_signature_lifetime),
-                data: DsOrKeyData::KeyData(data),
+                maximum_signature_lifetime: Some(MaximumSignatureLifeTime(
+                    maximum_signature_lifetime,
+                )),
+                data: DsOrKeyData::KeyData(Cow::Borrowed(data)),
             },
         }
     }
 }
 
-/// Struct supporting either the `dsData` or the `keyData` interface.
-#[derive(Debug)]
-pub struct DsOrKeyType<'a> {
-    maximum_signature_lifetime: Option<Duration>,
-    data: DsOrKeyData<'a>,
+impl Transaction<InfoData> for crate::domain::info::DomainInfo<'_> {}
+
+#[derive(Debug, ToXml)]
+pub struct InfoData;
+
+#[derive(Debug, FromXml)]
+#[xml(rename = "infData", ns(XMLNS))]
+pub struct InfoDataResponse<'a> {
+    pub data: DsOrKeyType<'a>,
 }
 
-impl ToXml for DsOrKeyType<'_> {
-    fn serialize<W: Write + ?Sized>(
-        &self,
-        _: Option<Id<'_>>,
-        serializer: &mut Serializer<'_, W>,
-    ) -> Result<(), Error> {
-        if let Some(maximum_signature_lifetime) = self.maximum_signature_lifetime {
-            let nc_name = "maxSigLife";
-            let prefix = serializer.write_start(nc_name, XMLNS)?;
+impl Extension for InfoData {
+    type Response = InfoDataResponse<'static>;
+}
+
+pub use update::{RemoveData, UpdateData};
+mod update {
+    use super::*;
+
+    impl Transaction<UpdateData<'_>> for crate::domain::update::DomainUpdate<'_> {}
+
+    impl Extension for UpdateData<'_> {
+        type Response = NoExtension;
+    }
+
+    // NOTE: Per RFC 5910 (paraphased): "At least one add, rem, or change element MUST be provided."
+    // Feels excessive to enforce this with the type system, this will do for now.
+    #[derive(Debug)]
+    pub struct UpdateData<'a> {
+        /// Ask the server operator to process the request with high priority
+        ///
+        /// "High priority" is relative to standard server operator policies
+        /// that are determined using an out-of-band mechanism
+        // NOTE: Option<bool> in RFC
+        pub urgent: bool,
+        /// Remove security information from a delegation
+        pub remove: Option<RemoveData<'a>>,
+        /// Add security information to a delegation
+        pub add: Option<DsOrKeyData<'a>>,
+        /// Change existing security information
+        // NOTE: Should be Option<Option<Max...>> for full RFC compliance
+        pub change: Option<MaximumSignatureLifeTime>,
+    }
+
+    impl ToXml for UpdateData<'_> {
+        fn serialize<W: std::fmt::Write + ?Sized>(
+            &self,
+            field: Option<Id<'_>>,
+            serializer: &mut Serializer<W>,
+        ) -> Result<(), Error> {
+            const ELEMENT: &str = "update";
+            // Opening tag
+            serializer.write_start(ELEMENT, XMLNS)?;
+            if self.urgent {
+                serializer.write_attr("urgent", serializer.default_ns(), "true")?;
+            }
+            let old_context = serializer.push(instant_xml::ser::Context {
+                default_ns: XMLNS,
+                prefixes: [instant_xml::ser::Prefix {
+                    prefix: "",
+                    ns: XMLNS,
+                }],
+            })?;
             serializer.end_start()?;
-            maximum_signature_lifetime
-                .as_secs()
-                .serialize(None, serializer)?;
-            serializer.write_close(prefix, nc_name)?;
+
+            serialize_nested("rem", self.remove.as_ref(), field, serializer)?;
+            serialize_nested("add", self.add.as_ref(), field, serializer)?;
+            serialize_nested("chg", self.change.as_ref(), field, serializer)?;
+
+            serializer.pop(old_context);
+
+            serializer.write_close(None, ELEMENT)?;
+
+            return Ok(());
+
+            fn serialize_nested<T: ToXml, W: std::fmt::Write + ?Sized>(
+                element_name: &str,
+                action: Option<&T>,
+                field: Option<Id<'_>>,
+                serializer: &mut Serializer<W>,
+            ) -> Result<(), Error> {
+                if let Some(action_data) = action {
+                    serializer.write_start(element_name, serializer.default_ns())?;
+                    serializer.end_start()?;
+                    action_data.serialize(field, serializer)?;
+                    serializer.write_close(None, element_name)?;
+                }
+
+                Ok(())
+            }
         }
-        match &self.data {
-            DsOrKeyData::DsData(data) => data.serialize(None, serializer)?,
-            DsOrKeyData::KeyData(data) => data.serialize(None, serializer)?,
+    }
+
+    #[derive(Debug)]
+    pub enum RemoveData<'a> {
+        All,
+        DsOrKey(DsOrKeyData<'a>),
+    }
+
+    impl ToXml for RemoveData<'_> {
+        fn serialize<W: std::fmt::Write + ?Sized>(
+            &self,
+            field: Option<Id<'_>>,
+            serializer: &mut Serializer<W>,
+        ) -> Result<(), Error> {
+            match self {
+                RemoveData::All => {
+                    const ELEMENT: &str = "all";
+                    serializer.write_start(ELEMENT, XMLNS)?;
+                    serializer.end_start()?;
+                    serializer.write_str("true")?;
+                    serializer.write_close(None, ELEMENT)?;
+                }
+                RemoveData::DsOrKey(ds_or_key_data) => {
+                    ds_or_key_data.serialize(field, serializer)?;
+                }
+            }
+
+            Ok(())
         }
-        Ok(())
     }
 }
 
-#[derive(Debug, ToXml)]
-#[xml(forward)]
-pub enum DsOrKeyData<'a> {
-    DsData(&'a [DsDataType<'a>]),
-    KeyData(&'a [KeyDataType<'a>]),
+/// Struct supporting either the `dsData` or the `keyData` interface.
+#[derive(Debug, ToXml, FromXml)]
+#[xml(transparent)]
+pub struct DsOrKeyType<'a> {
+    maximum_signature_lifetime: Option<MaximumSignatureLifeTime>,
+    data: DsOrKeyData<'a>,
 }
 
-#[derive(Debug, ToXml)]
+#[derive(Debug, PartialEq)]
+pub struct MaximumSignatureLifeTime(pub Duration);
+
+impl MaximumSignatureLifeTime {
+    const ELEMENT_NAME: &str = "maxSigLife";
+}
+
+impl ToXml for MaximumSignatureLifeTime {
+    fn serialize<W: std::fmt::Write + ?Sized>(
+        &self,
+        _: Option<Id<'_>>,
+        serializer: &mut Serializer<W>,
+    ) -> Result<(), Error> {
+        let prefix = serializer.write_start(Self::ELEMENT_NAME, XMLNS)?;
+        serializer.end_start()?;
+
+        self.0.as_secs().serialize(None, serializer)?;
+
+        serializer.write_close(prefix, Self::ELEMENT_NAME)
+    }
+}
+
+impl<'xml> FromXml<'xml> for MaximumSignatureLifeTime {
+    fn matches(id: Id<'_>, _: Option<Id<'_>>) -> bool {
+        id == instant_xml::Id {
+            ns: XMLNS,
+            name: Self::ELEMENT_NAME,
+        }
+    }
+
+    fn deserialize<'cx>(
+        into: &mut Self::Accumulator,
+        field: &'static str,
+        deserializer: &mut instant_xml::Deserializer<'cx, 'xml>,
+    ) -> Result<(), Error> {
+        let mut value = <Option<u64> as FromXml<'xml>>::Accumulator::default();
+
+        instant_xml::from_xml_str(value.get_mut(), field, deserializer)?;
+
+        if let Some(duration_seconds) = value.get_mut() {
+            *into = Some(Self(Duration::from_secs(*duration_seconds)));
+        }
+
+        Ok(())
+    }
+
+    type Accumulator = Option<Self>;
+    const KIND: instant_xml::Kind = instant_xml::Kind::Scalar;
+}
+
+#[derive(Debug, ToXml, FromXml)]
+#[xml(forward)]
+pub enum DsOrKeyData<'a> {
+    DsData(Cow<'a, [DsDataType<'a>]>),
+    KeyData(Cow<'a, [KeyDataType<'a>]>),
+}
+
+#[derive(Debug, Clone, ToXml, FromXml)]
 #[xml(rename = "dsData", ns(XMLNS))]
 pub struct DsDataType<'a> {
     #[xml(rename = "keyTag")]
@@ -162,15 +317,20 @@ impl From<DigestAlgorithm> for u8 {
     }
 }
 
-impl ToXml for DigestAlgorithm {
-    fn serialize<W: Write + ?Sized>(
-        &self,
-        id: Option<Id<'_>>,
-        serializer: &mut Serializer<'_, W>,
-    ) -> Result<(), Error> {
-        u8::from(*self).serialize(id, serializer)
+impl From<u8> for DigestAlgorithm {
+    fn from(n: u8) -> Self {
+        match n {
+            1 => Self::Sha1,
+            2 => Self::Sha256,
+            3 => Self::Gost,
+            4 => Self::Sha384,
+            _ => Self::Other(n),
+        }
     }
 }
+
+crate::xml::from_scalar!(DigestAlgorithm, u8);
+crate::xml::to_scalar!(DigestAlgorithm, u8);
 
 /// Algorithm identifies the public key's cryptographic algorithm
 /// <https://www.iana.org/assignments/dns-sec-alg-numbers/dns-sec-alg-numbers.xhtml#dns-sec-alg-numbers-1>
@@ -245,17 +405,36 @@ impl From<Algorithm> for u8 {
     }
 }
 
-impl ToXml for Algorithm {
-    fn serialize<W: Write + ?Sized>(
-        &self,
-        id: Option<Id<'_>>,
-        serializer: &mut Serializer<'_, W>,
-    ) -> Result<(), Error> {
-        u8::from(*self).serialize(id, serializer)
+impl From<u8> for Algorithm {
+    fn from(n: u8) -> Self {
+        match n {
+            0 => Self::Delete,
+            1 => Self::RsaMd5,
+            2 => Self::Dh,
+            3 => Self::Dsa,
+            4 => Self::Ecc,
+            5 => Self::RsaSha1,
+            6 => Self::DsaNsec3Sha1,
+            7 => Self::RsaSha1Nsec3Sha1,
+            8 => Self::RsaSha256,
+            10 => Self::RsaSha512,
+            12 => Self::EccGost,
+            13 => Self::EcdsaP256Sha256,
+            14 => Self::EcdsaP384Sha384,
+            15 => Self::Ed25519,
+            16 => Self::Ed448,
+            252 => Self::Indirect,
+            253 => Self::PrivateDns,
+            254 => Self::PrivateOid,
+            _ => Self::Other(n),
+        }
     }
 }
 
-#[derive(Debug, ToXml)]
+crate::xml::from_scalar!(Algorithm, u8);
+crate::xml::to_scalar!(Algorithm, u8);
+
+#[derive(Debug, Clone, ToXml, FromXml)]
 #[xml(rename = "keyData", ns(XMLNS))]
 pub struct KeyDataType<'a> {
     flags: Flags,
@@ -282,7 +461,7 @@ impl<'a> KeyDataType<'a> {
     }
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Flags {
     /// Zone Key flag. If `true` then the DNSKEY record holds a DNS
     /// zone key. If `false` then the DNSKEY record holds some other
@@ -293,28 +472,35 @@ pub struct Flags {
     secure_entry_point: bool,
 }
 
+impl Flags {
+    const ZONE_KEY: u16 = 0b1_0000_0000;
+    const SECURE_ENDPOINT: u16 = 0x1;
+}
+
 impl From<Flags> for u16 {
     fn from(flags: Flags) -> Self {
         let mut res = 0;
         if flags.zone_key {
-            res |= 0b1_0000_0000;
+            res |= Flags::ZONE_KEY;
         }
         if flags.secure_entry_point {
-            res |= 0x1;
+            res |= Flags::SECURE_ENDPOINT;
         }
         res
     }
 }
 
-impl ToXml for Flags {
-    fn serialize<W: Write + ?Sized>(
-        &self,
-        id: Option<Id<'_>>,
-        serializer: &mut Serializer<'_, W>,
-    ) -> Result<(), Error> {
-        u16::from(*self).serialize(id, serializer)
+impl From<u16> for Flags {
+    fn from(n: u16) -> Self {
+        Self {
+            zone_key: (n | Self::ZONE_KEY == n),
+            secure_entry_point: (n | Self::SECURE_ENDPOINT == n),
+        }
     }
 }
+
+crate::xml::from_scalar!(Flags, u16);
+crate::xml::to_scalar!(Flags, u16);
 
 /// `Flags` for a zone signing key.
 pub const FLAGS_DNS_ZONE_KEY: Flags = Flags {
@@ -358,31 +544,84 @@ impl From<Protocol> for u8 {
     }
 }
 
-impl ToXml for Protocol {
-    fn serialize<W: Write + ?Sized>(
-        &self,
-        id: Option<Id<'_>>,
-        serializer: &mut Serializer<'_, W>,
-    ) -> Result<(), Error> {
-        u8::from(*self).serialize(id, serializer)
+impl From<u8> for Protocol {
+    fn from(n: u8) -> Self {
+        match n {
+            1 => Self::Tls,
+            2 => Self::Email,
+            3 => Self::Dnssec,
+            4 => Self::Ipsec,
+            255 => Self::All,
+            _ => Self::Other(n),
+        }
     }
 }
+
+crate::xml::from_scalar!(Protocol, u8);
+crate::xml::to_scalar!(Protocol, u8);
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::{self, Period, PeriodLength};
-    use crate::tests::assert_serialized;
+    use crate::domain::{self, DomainInfo, Period, PeriodLength};
+    use crate::tests::{assert_serialized, response_from_file_with_ext};
 
-    #[test]
-    fn create_ds_data_interface() {
-        let ds_data = [DsDataType::new(
+    mod maximum_signature_lifetime {
+        use super::*;
+
+        #[test]
+        fn serialization() {
+            let v = Some(MaximumSignatureLifeTime(Duration::from_secs(10)));
+            let xml = r#"<maxSigLife xmlns="urn:ietf:params:xml:ns:secDNS-1.1">10</maxSigLife>"#;
+
+            assert_eq!(xml, instant_xml::to_string(&v).unwrap());
+            assert_eq!(v, instant_xml::from_str(xml).unwrap());
+        }
+    }
+
+    mod flags {
+        use super::*;
+
+        #[test]
+        fn bijectivity() {
+            assert_bijectivity(true, true);
+            assert_bijectivity(true, false);
+            assert_bijectivity(false, false);
+            assert_bijectivity(false, true);
+
+            fn assert_bijectivity(zone_key: bool, secure_entry_point: bool) {
+                let flags = Flags {
+                    zone_key,
+                    secure_entry_point,
+                };
+
+                assert_eq!(flags, u16::from(flags).into())
+            }
+        }
+    }
+
+    fn mock_key_data() -> KeyDataType<'static> {
+        KeyDataType::new(
+            FLAGS_DNS_ZONE_KEY_SEP,
+            Protocol::Dnssec,
+            Algorithm::RsaMd5,
+            "AQPJ////4Q==",
+        )
+    }
+
+    fn mock_ds_data(key_data: Option<KeyDataType<'static>>) -> DsDataType<'static> {
+        DsDataType::new(
             12345,
             Algorithm::Dsa,
             DigestAlgorithm::Sha1,
             "49FD46E6C4B45C55D4AC",
-            None,
-        )];
+            key_data,
+        )
+    }
+
+    #[test]
+    fn create_ds_data_interface() {
+        let ds_data = [mock_ds_data(None)];
         let extension = CreateData::from((Duration::from_secs(604800), ds_data.as_ref()));
         let ns = [
             domain::HostInfo::Obj(domain::HostObj {
@@ -418,19 +657,8 @@ mod tests {
 
     #[test]
     fn create_ds_and_key_data_interface() {
-        let key_data = KeyDataType::new(
-            FLAGS_DNS_ZONE_KEY_SEP,
-            Protocol::Dnssec,
-            Algorithm::Dsa,
-            "AQPJ////4Q==",
-        );
-        let ds_data = [DsDataType::new(
-            12345,
-            Algorithm::Dsa,
-            DigestAlgorithm::Sha1,
-            "49FD46E6C4B45C55D4AC",
-            Some(key_data),
-        )];
+        let ds_data = [mock_ds_data(Some(mock_key_data()))];
+
         let extension = CreateData::from((Duration::from_secs(604800), ds_data.as_ref()));
         let ns = [
             domain::HostInfo::Obj(domain::HostObj {
@@ -466,12 +694,7 @@ mod tests {
 
     #[test]
     fn create_key_data_interface() {
-        let key_data = [KeyDataType::new(
-            FLAGS_DNS_ZONE_KEY_SEP,
-            Protocol::Dnssec,
-            Algorithm::RsaMd5,
-            "AQPJ////4Q==",
-        )];
+        let key_data = [mock_key_data()];
         let extension = CreateData::from(key_data.as_ref());
         let ns = [
             domain::HostInfo::Obj(domain::HostObj {
@@ -503,5 +726,124 @@ mod tests {
             "request/extensions/secdns_create_key.xml",
             (&object, &extension),
         );
+    }
+
+    #[test]
+    fn info_ds_data_interface() {
+        response_from_file_with_ext::<DomainInfo, InfoData>(
+            "response/extensions/secdns_info_ds.xml",
+        );
+    }
+
+    #[test]
+    fn info_key_data_interface() {
+        response_from_file_with_ext::<DomainInfo, InfoData>(
+            "response/extensions/secdns_info_key.xml",
+        );
+    }
+
+    mod update {
+        use std::borrow::Cow;
+
+        use domain::DomainUpdate;
+
+        use super::*;
+
+        #[test]
+        fn add_ds_remove_ds() {
+            let ds = [mock_ds_data(None)];
+            let ds_other = [mock_ds_other()];
+
+            let extension = UpdateData {
+                urgent: false,
+                remove: Some(RemoveData::DsOrKey(DsOrKeyData::DsData(Cow::Borrowed(&ds)))),
+                add: Some(DsOrKeyData::DsData(Cow::Borrowed(&ds_other))),
+                change: None,
+            };
+
+            assert_serialized(
+                "request/extensions/secdns_update_add_ds_rem_ds.xml",
+                (&mock_domain_update(), &extension),
+            );
+        }
+
+        #[test]
+        fn change() {
+            let extension = UpdateData {
+                urgent: false,
+                remove: None,
+                add: None,
+                change: mock_sig_life(),
+            };
+
+            assert_serialized(
+                "request/extensions/secdns_update_chg.xml",
+                (&mock_domain_update(), &extension),
+            );
+        }
+
+        #[test]
+        fn remove_all_urgent() {
+            let extension = UpdateData {
+                urgent: true,
+                remove: Some(RemoveData::All),
+                add: None,
+                change: None,
+            };
+
+            assert_serialized(
+                "request/extensions/secdns_update_rem_all_urgent.xml",
+                (&mock_domain_update(), &extension),
+            );
+        }
+
+        #[test]
+        fn remove_ks_add_ks_change() {
+            let ks = [mock_key_data()];
+            let ks_other = [mock_key_other()];
+
+            let extension = UpdateData {
+                urgent: false,
+                remove: Some(RemoveData::DsOrKey(DsOrKeyData::KeyData(Cow::Borrowed(
+                    &ks_other,
+                )))),
+                add: Some(DsOrKeyData::KeyData(Cow::Borrowed(&ks))),
+                change: mock_sig_life(),
+            };
+
+            assert_serialized(
+                "request/extensions/secdns_update_rem_ks_add_ks_chg.xml",
+                (&mock_domain_update(), &extension),
+            );
+        }
+
+        fn mock_domain_update() -> DomainUpdate<'static> {
+            DomainUpdate {
+                domain: domain::update::DomainUpdateRequestData {
+                    name: "example.com",
+                    add: None,
+                    remove: None,
+                    change_info: None,
+                },
+            }
+        }
+
+        fn mock_key_other() -> KeyDataType<'static> {
+            KeyDataType {
+                public_key: Cow::Borrowed("AQPJ////4QQQ"),
+                ..mock_key_data()
+            }
+        }
+
+        fn mock_ds_other() -> DsDataType<'static> {
+            DsDataType {
+                key_tag: 12346,
+                ..mock_ds_data(None)
+            }
+        }
+
+        fn mock_sig_life() -> Option<MaximumSignatureLifeTime> {
+            Some(MaximumSignatureLifeTime(Duration::from_secs(605900)))
+        }
     }
 }
