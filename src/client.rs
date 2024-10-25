@@ -229,7 +229,7 @@ mod rustls_connector {
 
     pub struct RustlsConnector {
         inner: TlsConnector,
-        domain: ServerName<'static>,
+        server_name: ServerName<'static>,
         server: (String, u16),
     }
 
@@ -261,7 +261,7 @@ mod rustls_connector {
                 None => builder.with_no_client_auth(),
             };
 
-            let domain = ServerName::try_from(server.0.as_str())
+            let server_name = ServerName::try_from(server.0.as_str())
                 .map_err(|_| {
                     io::Error::new(
                         io::ErrorKind::InvalidInput,
@@ -272,7 +272,7 @@ mod rustls_connector {
 
             Ok(Self {
                 inner: TlsConnector::from(Arc::new(config)),
-                domain,
+                server_name,
                 server,
             })
         }
@@ -295,7 +295,7 @@ mod rustls_connector {
             };
 
             let stream = TcpStream::connect(addr).await?;
-            let future = self.inner.connect(self.domain.clone(), stream);
+            let future = self.inner.connect(self.server_name.clone(), stream);
             connection::timeout(timeout, future).await
         }
     }
