@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 #[cfg(feature = "rustls")]
-use rustls_pki_types::{CertificateDer, PrivateKeyDer};
+use tokio_rustls::rustls::pki_types::{CertificateDer, PrivateKeyDer};
 use tracing::{debug, error};
 
 use crate::common::NoExtension;
@@ -216,10 +216,10 @@ mod rustls_connector {
 
     use async_trait::async_trait;
     use rustls_native_certs::CertificateResult;
-    use rustls_pki_types::{CertificateDer, PrivateKeyDer, ServerName};
     use tokio::net::lookup_host;
     use tokio::net::TcpStream;
     use tokio_rustls::client::TlsStream;
+    use tokio_rustls::rustls::pki_types::{CertificateDer, PrivateKeyDer, ServerName};
     use tokio_rustls::rustls::{ClientConfig, RootCertStore};
     use tokio_rustls::TlsConnector;
     use tracing::info;
