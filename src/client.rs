@@ -247,13 +247,10 @@ mod rustls_connector {
             }
 
             for cert in certs {
-                roots.add(cert).map_err(|err| {
-                    Box::new(err) as Box<dyn std::error::Error + Send + Sync + 'static>
-                })?;
+                roots.add(cert).map_err(|err| Error::Other(err.into()))?;
             }
 
             let builder = ClientConfig::builder().with_root_certificates(roots);
-
             let config = match identity {
                 Some((certs, key)) => builder
                     .with_client_auth_cert(certs, key)
@@ -262,12 +259,7 @@ mod rustls_connector {
             };
 
             let server_name = ServerName::try_from(server.0.as_str())
-                .map_err(|_| {
-                    io::Error::new(
-                        io::ErrorKind::InvalidInput,
-                        format!("invalid domain: {}", server.0),
-                    )
-                })?
+                .map_err(|err| Error::Other(err.into()))?
                 .to_owned();
 
             Ok(Self {
