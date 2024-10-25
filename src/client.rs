@@ -215,12 +215,12 @@ mod rustls_connector {
     use std::time::Duration;
 
     use async_trait::async_trait;
-    use rustls_native_certs::CertificateResult;
+    use rustls_platform_verifier::Verifier;
     use tokio::net::lookup_host;
     use tokio::net::TcpStream;
     use tokio_rustls::client::TlsStream;
     use tokio_rustls::rustls::pki_types::{CertificateDer, PrivateKeyDer, ServerName};
-    use tokio_rustls::rustls::{ClientConfig, RootCertStore};
+    use tokio_rustls::rustls::ClientConfig;
     use tokio_rustls::TlsConnector;
     use tracing::info;
 
@@ -238,19 +238,10 @@ mod rustls_connector {
             server: (String, u16),
             identity: Option<(Vec<CertificateDer<'static>>, PrivateKeyDer<'static>)>,
         ) -> Result<Self, Error> {
-            let mut roots = RootCertStore::empty();
-            let CertificateResult {
-                certs, mut errors, ..
-            } = rustls_native_certs::load_native_certs();
-            if let Some(err) = errors.pop() {
-                return Err(Error::Other(err.into()));
-            }
+            let builder = ClientConfig::builder()
+                .dangerous()
+                .with_custom_certificate_verifier(Arc::new(Verifier::new()));
 
-            for cert in certs {
-                roots.add(cert).map_err(|err| Error::Other(err.into()))?;
-            }
-
-            let builder = ClientConfig::builder().with_root_certificates(roots);
             let config = match identity {
                 Some((certs, key)) => builder
                     .with_client_auth_cert(certs, key)
