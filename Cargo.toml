@@ -8,8 +8,10 @@ description = "EPP client library for async Rust"
 repository = "https://github.com/instant-labs/instant-epp"
 
 [features]
-default = ["rustls"]
-rustls = ["tokio-rustls", "rustls-native-certs"]
+default = ["rustls-aws-lc-rs"]
+rustls-aws-lc-rs = ["dep:tokio-rustls", "tokio-rustls/aws-lc-rs", "dep:rustls-native-certs"]
+rustls-ring = ["dep:tokio-rustls", "tokio-rustls/ring", "dep:rustls-native-certs"]
+__rustls = []
 
 [dependencies]
 async-trait = "0.1.52"
@@ -19,7 +21,7 @@ instant-xml = { version = "0.5", features = ["chrono"] }
 rustls-native-certs = { version = "0.8", optional = true }
 serde = { version = "1.0", features = ["derive"] }
 tokio = { version = "1.0", features = ["io-util", "net", "time"] }
-tokio-rustls = { version = "0.26", optional = true, default-features = false, features = ["logging", "ring", "tls12"] }
+tokio-rustls = { version = "0.26", optional = true, default-features = false, features = ["logging", "tls12"] }
 tracing = "0.1.29"
 
 [dev-dependencies]
