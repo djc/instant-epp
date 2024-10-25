@@ -283,13 +283,13 @@ mod rustls_connector {
         type Connection = TlsStream<TcpStream>;
 
         async fn connect(&self, timeout: Duration) -> Result<Self::Connection, Error> {
-            info!("Connecting to server: {}:{}", self.server.0, self.server.1);
+            info!("connecting to server: {}:{}", self.server.0, self.server.1);
             let addr = match lookup_host(&self.server).await?.next() {
                 Some(addr) => addr,
                 None => {
                     return Err(Error::Io(io::Error::new(
                         io::ErrorKind::InvalidInput,
-                        format!("Invalid host: {}", &self.server.0),
+                        format!("invalid host: {}", &self.server.0),
                     )))
                 }
             };
