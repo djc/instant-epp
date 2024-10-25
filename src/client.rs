@@ -85,7 +85,7 @@ impl EppClient<RustlsConnector> {
         identity: Option<(Vec<CertificateDer<'static>>, PrivateKeyDer<'static>)>,
         timeout: Duration,
     ) -> Result<Self, Error> {
-        let connector = RustlsConnector::new(server, identity).await?;
+        let connector = RustlsConnector::new(server, identity)?;
         Self::new(connector, registry, timeout).await
     }
 }
@@ -234,7 +234,7 @@ mod rustls_connector {
     }
 
     impl RustlsConnector {
-        pub async fn new(
+        pub fn new(
             server: (String, u16),
             identity: Option<(Vec<CertificateDer<'static>>, PrivateKeyDer<'static>)>,
         ) -> Result<Self, Error> {
