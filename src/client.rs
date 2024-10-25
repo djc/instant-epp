@@ -85,7 +85,14 @@ impl EppClient<RustlsConnector> {
         identity: Option<(Vec<CertificateDer<'static>>, PrivateKeyDer<'static>)>,
         timeout: Duration,
     ) -> Result<Self, Error> {
-        let connector = RustlsConnector::new(server, identity)?;
+        let builder =
+            RustlsConnector::builder(server).map_err(|err| Error::Other(Box::new(err)))?;
+        let builder = match identity {
+            Some((certs, key)) => builder.client_auth(certs, key),
+            None => builder,
+        };
+
+        let connector = builder.build().map_err(|err| Error::Other(Box::new(err)))?;
         Self::new(connector, registry, timeout).await
     }
 }
@@ -219,6 +226,7 @@ mod rustls_connector {
     use tokio::net::lookup_host;
     use tokio::net::TcpStream;
     use tokio_rustls::client::TlsStream;
+    use tokio_rustls::rustls::pki_types::InvalidDnsNameError;
     use tokio_rustls::rustls::pki_types::{CertificateDer, PrivateKeyDer, ServerName};
     use tokio_rustls::rustls::ClientConfig;
     use tokio_rustls::TlsConnector;
@@ -234,29 +242,14 @@ mod rustls_connector {
     }
 
     impl RustlsConnector {
-        pub fn new(
+        /// Create a builder with the given `server` (consisting of a hostname and port)
+        pub fn builder(
             server: (String, u16),
-            identity: Option<(Vec<CertificateDer<'static>>, PrivateKeyDer<'static>)>,
-        ) -> Result<Self, Error> {
-            let builder = ClientConfig::builder()
-                .dangerous()
-                .with_custom_certificate_verifier(Arc::new(Verifier::new()));
-
-            let config = match identity {
-                Some((certs, key)) => builder
-                    .with_client_auth_cert(certs, key)
-                    .map_err(|e| Error::Other(e.into()))?,
-                None => builder.with_no_client_auth(),
-            };
-
-            let server_name = ServerName::try_from(server.0.as_str())
-                .map_err(|err| Error::Other(err.into()))?
-                .to_owned();
-
-            Ok(Self {
-                inner: TlsConnector::from(Arc::new(config)),
-                server_name,
+        ) -> Result<RustlsConnectorBuilder, InvalidDnsNameError> {
+            Ok(RustlsConnectorBuilder {
+                server_name: ServerName::try_from(server.0.as_str())?.to_owned(),
                 server,
+                identity: None,
             })
         }
     }
@@ -280,6 +273,67 @@ mod rustls_connector {
             let stream = TcpStream::connect(addr).await?;
             let future = self.inner.connect(self.server_name.clone(), stream);
             connection::timeout(timeout, future).await
+        }
+    }
+
+    pub struct RustlsConnectorBuilder {
+        server: (String, u16),
+        server_name: ServerName<'static>,
+        identity: Option<(Vec<CertificateDer<'static>>, PrivateKeyDer<'static>)>,
+    }
+
+    impl RustlsConnectorBuilder {
+        /// Enable client authentication
+        ///
+        /// Only used when `build()` is called.
+        pub fn client_auth(
+            mut self,
+            certs: Vec<CertificateDer<'static>>,
+            key: PrivateKeyDer<'static>,
+        ) -> Self {
+            self.identity = Some((certs, key));
+            self
+        }
+
+        /// Use the given `config` for the TLS connector
+        ///
+        /// Any client authentication set with `client_auth` will be ignored.
+        pub fn build_with_config(self, config: Arc<ClientConfig>) -> RustlsConnector {
+            let Self {
+                server,
+                server_name,
+                identity: _identity,
+            } = self;
+
+            RustlsConnector {
+                inner: TlsConnector::from(config),
+                server_name,
+                server,
+            }
+        }
+
+        /// Build a new [`ClientConfig`]
+        pub fn build(self) -> Result<RustlsConnector, tokio_rustls::rustls::Error> {
+            let Self {
+                server,
+                server_name,
+                identity,
+            } = self;
+
+            let builder = ClientConfig::builder()
+                .dangerous()
+                .with_custom_certificate_verifier(Arc::new(Verifier::new()));
+
+            let config = match identity {
+                Some((certs, key)) => builder.with_client_auth_cert(certs, key)?,
+                None => builder.with_no_client_auth(),
+            };
+
+            Ok(RustlsConnector {
+                inner: TlsConnector::from(Arc::new(config)),
+                server_name,
+                server,
+            })
         }
     }
 }
