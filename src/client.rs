@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-#[cfg(feature = "rustls")]
+#[cfg(feature = "__rustls")]
 use tokio_rustls::rustls::pki_types::{CertificateDer, PrivateKeyDer};
 use tracing::{debug, error};
 
@@ -68,7 +68,7 @@ pub struct EppClient<C: Connector> {
     connection: EppConnection<C>,
 }
 
-#[cfg(feature = "rustls")]
+#[cfg(feature = "__rustls")]
 impl EppClient<RustlsConnector> {
     /// Connect to the specified `addr` and `hostname` over TLS
     ///
@@ -205,10 +205,10 @@ impl<C, E> Clone for RequestData<'_, '_, C, E> {
 // Manual impl because this does not depend on whether `C` and `E` are `Copy`
 impl<C, E> Copy for RequestData<'_, '_, C, E> {}
 
-#[cfg(feature = "rustls")]
+#[cfg(feature = "__rustls")]
 pub use rustls_connector::RustlsConnector;
 
-#[cfg(feature = "rustls")]
+#[cfg(feature = "__rustls")]
 mod rustls_connector {
     use std::io;
     use std::sync::Arc;
