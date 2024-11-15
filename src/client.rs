@@ -222,7 +222,7 @@ mod rustls_connector {
     use std::time::Duration;
 
     use async_trait::async_trait;
-    use rustls_platform_verifier::Verifier;
+    use rustls_platform_verifier::BuilderVerifierExt;
     use tokio::net::lookup_host;
     use tokio::net::TcpStream;
     use tokio_rustls::client::TlsStream;
@@ -320,10 +320,7 @@ mod rustls_connector {
                 identity,
             } = self;
 
-            let builder = ClientConfig::builder()
-                .dangerous()
-                .with_custom_certificate_verifier(Arc::new(Verifier::new()));
-
+            let builder = ClientConfig::builder().with_platform_verifier();
             let config = match identity {
                 Some((certs, key)) => builder.with_client_auth_cert(certs, key)?,
                 None => builder.with_no_client_auth(),
