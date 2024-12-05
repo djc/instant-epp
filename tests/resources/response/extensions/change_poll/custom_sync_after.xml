@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- 
+An example poll <info> response with the
+<changePoll:changeData> extension for a custom "sync" operation on
+the domain.example domain name, with the default "after" state.  The
+"after" state is reflected in the <resData> block 
+-->
+<epp xmlns="urn:ietf:params:xml:ns:epp-1.0">
+   <response>
+      <result code="1301">
+         <msg>Command completed successfully; ack to dequeue</msg>
+      </result>
+      <msgQ id="201" count="1">
+         <qDate>2013-10-22T14:25:57.0Z</qDate>
+    <msg>Registry initiated Sync of Domain Expiration Date</msg>
+      </msgQ>
+    <resData>
+      <domain:infData xmlns:domain="urn:ietf:params:xml:ns:domain-1.0">
+        <domain:name>domain.example</domain:name>
+        <domain:roid>EXAMPLE1-REP</domain:roid>
+        <domain:status s="ok"/>
+        <domain:registrant>jd1234</domain:registrant>
+        <domain:contact type="admin">sh8013</domain:contact>
+        <domain:contact type="tech">sh8013</domain:contact>
+        <domain:clID>ClientX</domain:clID>
+        <domain:crID>ClientY</domain:crID>
+        <domain:crDate>2012-04-03T22:00:00.0Z</domain:crDate>
+        <domain:upID>ClientZ</domain:upID>
+        <domain:upDate>2013-10-22T14:25:57.0Z</domain:upDate>
+        <domain:exDate>2014-04-03T22:00:00.0Z</domain:exDate>
+      </domain:infData>
+    </resData>
+    <extension>
+      <changePoll:changeData xmlns:changePoll="urn:ietf:params:xml:ns:changePoll-1.0">
+        <changePoll:operation op="sync">custom</changePoll:operation>
+        <changePoll:date>2013-10-22T14:25:57.0Z</changePoll:date>
+        <changePoll:svTRID>12345-XYZ</changePoll:svTRID>
+        <changePoll:who>CSR</changePoll:who>
+        <changePoll:reason lang="en">Customer sync request</changePoll:reason>
+      </changePoll:changeData>
+    </extension>
+    <trID>
+      <clTRID>cltrid:1626454866</clTRID>
+      <svTRID>RO-6879-1627224678242975</svTRID>
+    </trID>
+   </response>
+</epp>

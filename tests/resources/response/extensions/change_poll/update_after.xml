@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+An example poll <info> response with the
+<changePoll:changeData> extension for an "update" operation on the
+ns1.domain.example host, with the default "after" state.  The "after"
+state is reflected in the <resData> block
+-->
+<epp xmlns="urn:ietf:params:xml:ns:epp-1.0">
+   <response>
+      <result code="1301">
+         <msg>Command completed successfully; ack to dequeue</msg>
+      </result>
+      <msgQ id="201" count="1">
+         <qDate>2013-10-22T14:25:57.0Z</qDate>
+         <msg>Registry initiated update of host.</msg>
+      </msgQ>
+    <resData>
+      <host:infData xmlns:host="urn:ietf:params:xml:ns:host-1.0">
+        <host:name>ns1.domain.example</host:name>
+        <host:roid>NS1_EXAMPLE1-REP</host:roid>
+        <host:status s="linked"/>
+        <host:status s="serverUpdateProhibited"/>
+        <host:status s="serverDeleteProhibited"/>
+        <host:addr ip="v4">192.0.2.2</host:addr>
+        <host:addr ip="v6">2001:db8:0:0:1:0:0:1</host:addr>
+        <host:clID>ClientX</host:clID>
+        <host:crID>ClientY</host:crID>
+        <host:crDate>2012-04-03T22:00:00.0Z</host:crDate>
+        <host:upID>ClientY</host:upID>
+        <host:upDate>2013-10-22T14:25:57.0Z</host:upDate>
+      </host:infData>
+    </resData>
+    <extension>
+      <changePoll:changeData xmlns:changePoll="urn:ietf:params:xml:ns:changePoll-1.0">
+        <changePoll:operation>update</changePoll:operation>
+        <changePoll:date>2013-10-22T14:25:57.0Z</changePoll:date>
+        <changePoll:svTRID>12345-XYZ</changePoll:svTRID>
+        <changePoll:who>ClientZ</changePoll:who>
+        <changePoll:reason>Host Lock</changePoll:reason>
+      </changePoll:changeData>
+    </extension>
+    <trID>
+      <clTRID>cltrid:1626454866</clTRID>
+      <svTRID>RO-6879-1627224678242975</svTRID>
+    </trID>
+   </response>
+</epp>
