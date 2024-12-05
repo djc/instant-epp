@@ -51,6 +51,7 @@ pub mod response;
 pub mod xml;
 
 pub mod extensions {
+    pub mod change_poll;
     pub mod consolidate;
     pub mod frnic;
     pub mod low_balance;

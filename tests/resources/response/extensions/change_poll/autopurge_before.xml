@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+An example poll <info> response with the
+<changePoll:changeData> extension for an "autoPurge" operation on the
+domain.example domain name that previously had the "pendingDelete"
+status, with the "before" state.  The "before" state is reflected in
+the <resData> block
+-->
+<epp xmlns="urn:ietf:params:xml:ns:epp-1.0">
+  <response>
+    <result code="1301">
+      <msg>Command completed successfully; ack to dequeue</msg>
+    </result>
+    <msgQ id="200" count="1">
+      <qDate>2013-10-22T14:25:57.0Z</qDate>
+      <msg>Registry purged domain with pendingDelete status.</msg>
+    </msgQ>
+    <resData>
+      <domain:infData xmlns:domain="urn:ietf:params:xml:ns:domain-1.0">
+        <domain:name>domain.example</domain:name>
+        <domain:roid>EXAMPLE1-REP</domain:roid>
+        <domain:status s="pendingDelete"/>
+        <domain:clID>ClientX</domain:clID>
+      </domain:infData>
+    </resData>
+    <extension>
+      <changePoll:changeData xmlns:changePoll="urn:ietf:params:xml:ns:changePoll-1.0" state="before">
+        <changePoll:operation>autoPurge</changePoll:operation>
+        <changePoll:date>2013-10-22T14:25:57.0Z</changePoll:date>
+        <changePoll:svTRID>12345-XYZ</changePoll:svTRID>
+        <changePoll:who>Batch</changePoll:who>
+        <changePoll:reason>Past pendingDelete 5 day period</changePoll:reason>
+      </changePoll:changeData>
+    </extension>
+    <trID>
+      <clTRID>cltrid:1626454866</clTRID>
+      <svTRID>RO-6879-1627224678242975</svTRID>
+    </trID>
+  </response>
+</epp>
