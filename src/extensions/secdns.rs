@@ -209,6 +209,10 @@ pub enum Algorithm {
     Ed25519,
     /// Ed448
     Ed448,
+    /// SM2 signing algorithm with SM3 hashing algorithm
+    Sm2Sm3,
+    /// GOST R 34.10.2012
+    EccGost12,
     /// Indirect
     Indirect,
     /// Private
@@ -237,6 +241,8 @@ impl From<Algorithm> for u8 {
             Algorithm::EcdsaP384Sha384 => 14,
             Algorithm::Ed25519 => 15,
             Algorithm::Ed448 => 16,
+            Algorithm::Sm2Sm3 => 17,
+            Algorithm::EccGost12 => 23,
             Algorithm::Indirect => 252,
             Algorithm::PrivateDns => 253,
             Algorithm::PrivateOid => 254,
