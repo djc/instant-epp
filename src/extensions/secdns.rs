@@ -147,6 +147,7 @@ pub enum DigestAlgorithm {
     Sha256,
     Gost,
     Sha384,
+    Sm3,
     Other(u8),
 }
 
@@ -157,6 +158,7 @@ impl From<DigestAlgorithm> for u8 {
             DigestAlgorithm::Sha256 => 2,
             DigestAlgorithm::Gost => 3,
             DigestAlgorithm::Sha384 => 4,
+            DigestAlgorithm::Sm3 => 6,
             DigestAlgorithm::Other(n) => n,
         }
     }
