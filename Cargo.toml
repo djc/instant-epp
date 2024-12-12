@@ -9,8 +9,8 @@ repository = "https://github.com/instant-labs/instant-epp"
 
 [features]
 default = ["rustls-aws-lc-rs"]
-rustls-aws-lc-rs = ["dep:tokio-rustls", "tokio-rustls/aws-lc-rs", "dep:rustls-platform-verifier"]
-rustls-ring = ["dep:tokio-rustls", "tokio-rustls/ring", "dep:rustls-platform-verifier"]
+rustls-aws-lc-rs = ["dep:tokio-rustls", "tokio-rustls/aws-lc-rs", "dep:rustls-platform-verifier", "__rustls"]
+rustls-ring = ["dep:tokio-rustls", "tokio-rustls/ring", "dep:rustls-platform-verifier", "__rustls"]
 __rustls = []
 
 [dependencies]
