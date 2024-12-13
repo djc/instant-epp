@@ -22,7 +22,7 @@ pub mod delete;
 pub use delete::DomainDelete;
 
 pub mod info;
-pub use info::DomainInfo;
+pub use info::{DomainInfo, InfoData};
 
 pub mod renew;
 pub use renew::DomainRenew;

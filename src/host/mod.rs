@@ -18,7 +18,7 @@ pub mod delete;
 pub use delete::HostDelete;
 
 pub mod info;
-pub use info::HostInfo;
+pub use info::{HostInfo, InfoData};
 
 pub mod update;
 pub use update::HostUpdate;
