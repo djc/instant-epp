@@ -321,6 +321,8 @@ pub trait ConnectionExtensionResponse: FromXmlOwned + Debug {}
 
 impl ConnectionExtensionResponse for NoExtension {}
 
+impl<T: ConnectionExtensionResponse> ConnectionExtensionResponse for Option<T> {}
+
 /// Combines connection extensions and command extensions
 ///
 /// Some extensions are sent by the server no matter if an extension was defined for the command.
