@@ -116,14 +116,14 @@ impl<C: Connector> EppClient<C> {
         xml::deserialize::<Greeting>(&response)
     }
 
-    pub async fn transact<'c, 'e, Cmd, Ext>(
+    pub async fn transact<'c, 'e, Cmd, CmdExt>(
         &mut self,
-        data: impl Into<RequestData<'c, 'e, Cmd, Ext>>,
+        data: impl Into<RequestData<'c, 'e, Cmd, CmdExt>>,
         id: &str,
-    ) -> Result<Response<Cmd::Response, Ext::Response>, Error>
+    ) -> Result<Response<Cmd::Response, CmdExt::Response>, Error>
     where
-        Cmd: Transaction<Ext> + Command + 'c,
-        Ext: Extension + 'e,
+        Cmd: Transaction<CmdExt> + Command + 'c,
+        CmdExt: Extension + 'e,
     {
         let data = data.into();
         let document = CommandWrapper::new(data.command, data.extension, id);
@@ -133,7 +133,7 @@ impl<C: Connector> EppClient<C> {
         let response = self.connection.transact(&xml)?.await?;
         debug!("{}: response: {}", self.connection.registry, &response);
 
-        let rsp = match xml::deserialize::<Response<Cmd::Response, Ext::Response>>(&response) {
+        let rsp = match xml::deserialize::<Response<Cmd::Response, CmdExt::Response>>(&response) {
             Ok(rsp) => rsp,
             Err(e) => {
                 error!(%response, "failed to deserialize response for transaction: {e}");
@@ -179,9 +179,9 @@ impl<C: Connector> EppClient<C> {
 }
 
 #[derive(Debug)]
-pub struct RequestData<'c, 'e, C, E> {
-    pub(crate) command: &'c C,
-    pub(crate) extension: Option<&'e E>,
+pub struct RequestData<'c, 'e, Command, CommandExt> {
+    pub(crate) command: &'c Command,
+    pub(crate) extension: Option<&'e CommandExt>,
 }
 
 impl<'c, C: Command> From<&'c C> for RequestData<'c, 'static, C, NoExtension> {
@@ -193,8 +193,10 @@ impl<'c, C: Command> From<&'c C> for RequestData<'c, 'static, C, NoExtension> {
     }
 }
 
-impl<'c, 'e, C: Command, E: Extension> From<(&'c C, &'e E)> for RequestData<'c, 'e, C, E> {
-    fn from((command, extension): (&'c C, &'e E)) -> Self {
+impl<'c, 'e, C: Command, CommandExt: Extension> From<(&'c C, &'e CommandExt)>
+    for RequestData<'c, 'e, C, CommandExt>
+{
+    fn from((command, extension): (&'c C, &'e CommandExt)) -> Self {
         Self {
             command,
             extension: Some(extension),
@@ -203,14 +205,14 @@ impl<'c, 'e, C: Command, E: Extension> From<(&'c C, &'e E)> for RequestData<'c, 
 }
 
 // Manual impl because this does not depend on whether `C` and `E` are `Clone`
-impl<C, E> Clone for RequestData<'_, '_, C, E> {
+impl<Command, CommandExt> Clone for RequestData<'_, '_, Command, CommandExt> {
     fn clone(&self) -> Self {
         *self
     }
 }
 
 // Manual impl because this does not depend on whether `C` and `E` are `Copy`
-impl<C, E> Copy for RequestData<'_, '_, C, E> {}
+impl<Command, CommandExt> Copy for RequestData<'_, '_, Command, CommandExt> {}
 
 #[cfg(feature = "__rustls")]
 pub use rustls_connector::RustlsConnector;
