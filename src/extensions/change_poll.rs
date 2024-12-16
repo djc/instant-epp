@@ -3,33 +3,31 @@
 //! As described in RFC8590: [Change Poll Extension for the Extensible Provisioning Protocol (EPP)](https://www.rfc-editor.org/rfc/rfc8590.html).
 //! Tests cases in `tests/resources/response/extensions/changepoll`` are taken from the RFC.
 
-use std::borrow::Cow;
-
 use instant_xml::{Error, FromXml, ToXml};
 
 use crate::response::ConnectionExtensionResponse;
 
 pub const XMLNS: &str = "urn:ietf:params:xml:ns:changePoll-1.0";
 
-impl ConnectionExtensionResponse for ChangePoll<'_> {}
+impl ConnectionExtensionResponse for ChangePoll {}
 
 /// Type for EPP XML `<changePoll>` extension
 ///
 /// Attributes associated with the change
 #[derive(Debug, FromXml, ToXml)]
 #[xml(rename = "changeData", ns(XMLNS))]
-pub struct ChangePoll<'a> {
+pub struct ChangePoll {
     /// Transform operation executed on the object
-    pub operation: Operation<'a>,
+    pub operation: Operation,
     /// Date and time when the operation was executed
-    pub date: Cow<'a, str>,
+    pub date: String,
     /// Server transaction identifier of the operation
     #[xml(rename = "svTRID")]
-    pub server_tr_id: Cow<'a, str>,
+    pub server_tr_id: String,
     /// Who executed the operation
-    pub who: Cow<'a, str>,
+    pub who: String,
     /// Case identifier associated with the operation
-    pub case_id: Option<CaseIdentifier<'a>>,
+    pub case_id: Option<CaseIdentifier>,
     /// Reason for executing the operation
     pub reason: Option<Reason>,
     /// Enumerated state of the object in the poll message
@@ -39,7 +37,7 @@ pub struct ChangePoll<'a> {
     state: Option<State>,
 }
 
-impl ChangePoll<'_> {
+impl ChangePoll {
     /// State reflects if the `infData` describes the object before or after the operation
     pub fn state(&self) -> State {
         self.state.unwrap_or_default()
@@ -51,16 +49,16 @@ impl ChangePoll<'_> {
 // to make this struct more ergonomic.
 #[derive(Debug, FromXml, ToXml)]
 #[xml(rename = "operation", ns(XMLNS))]
-pub struct Operation<'a> {
+pub struct Operation {
     /// Custom value for`OperationKind::Custom`
     #[xml(attribute, rename = "op")]
-    op: Option<Cow<'a, str>>,
+    op: Option<String>,
     /// The operation
     #[xml(direct)]
     kind: OperationType,
 }
 
-impl Operation<'_> {
+impl Operation {
     pub fn kind(&self) -> Result<OperationKind, Error> {
         Ok(match self.kind {
             OperationType::Create => OperationKind::Create,
@@ -121,16 +119,16 @@ enum OperationType {
 // to make this struct more ergonomic.
 #[derive(Debug, FromXml, ToXml)]
 #[xml(rename = "caseId", ns(XMLNS))]
-pub struct CaseIdentifier<'a> {
+pub struct CaseIdentifier {
     #[xml(attribute, rename = "type")]
     id_type: CaseIdentifierType,
     #[xml(attribute)]
-    name: Option<Cow<'a, str>>,
+    name: Option<String>,
     #[xml(direct)]
-    pub id: Cow<'a, str>,
+    pub id: String,
 }
 
-impl CaseIdentifier<'_> {
+impl CaseIdentifier {
     pub fn kind(&self) -> Result<CaseIdentifierKind, Error> {
         Ok(match self.id_type {
             CaseIdentifierType::Udrp => CaseIdentifierKind::Udrp,
