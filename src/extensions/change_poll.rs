@@ -3,8 +3,6 @@
 //! As described in RFC8590: [Change Poll Extension for the Extensible Provisioning Protocol (EPP)](https://www.rfc-editor.org/rfc/rfc8590.html).
 //! Tests cases in `tests/resources/response/extensions/changepoll`` are taken from the RFC.
 
-use std::borrow::Cow;
-
 use instant_xml::{Error, FromXml, ToXml};
 
 use crate::{
@@ -14,29 +12,33 @@ use crate::{
 
 pub const XMLNS: &str = "urn:ietf:params:xml:ns:changePoll-1.0";
 
-impl Transaction<ChangePoll<'_>> for Poll {}
+// todo: make sure no element for <extension> is added in the request when using this.
+#[derive(Debug, ToXml)]
+struct ChangePollExtension;
 
-impl Extension for ChangePoll<'_> {
-    type Response = ChangePoll<'static>;
+impl Transaction<ChangePollExtension> for Poll {}
+
+impl Extension for ChangePollExtension {
+    type Response = ChangePoll;
 }
 
 /// Type for EPP XML `<changePoll>` extension
 ///
 /// Attributes associated with the change
-#[derive(Debug, FromXml, ToXml)]
+#[derive(Debug, FromXml)]
 #[xml(rename = "changeData", ns(XMLNS))]
-pub struct ChangePoll<'a> {
+pub struct ChangePoll {
     /// Transform operation executed on the object
-    pub operation: Operation<'a>,
+    pub operation: Operation,
     /// Date and time when the operation was executed
-    pub date: Cow<'a, str>,
+    pub date: String,
     /// Server transaction identifier of the operation
     #[xml(rename = "svTRID")]
-    pub server_tr_id: Cow<'a, str>,
+    pub server_tr_id: String,
     /// Who executed the operation
-    pub who: Cow<'a, str>,
+    pub who: String,
     /// Case identifier associated with the operation
-    pub case_id: Option<CaseIdentifier<'a>>,
+    pub case_id: Option<CaseIdentifier>,
     /// Reason for executing the operation
     pub reason: Option<Reason>,
     /// Enumerated state of the object in the poll message
@@ -46,7 +48,7 @@ pub struct ChangePoll<'a> {
     state: Option<State>,
 }
 
-impl ChangePoll<'_> {
+impl ChangePoll {
     /// State reflects if the `infData` describes the object before or after the operation
     pub fn state(&self) -> State {
         self.state.unwrap_or_default()
@@ -56,18 +58,18 @@ impl ChangePoll<'_> {
 /// Transform operation type for `<changePoll:operation>`
 // todo: Allow struct enum variants with #[xml(attribute, rename = "op")] in instant-xml,
 // to make this struct more ergonomic.
-#[derive(Debug, FromXml, ToXml)]
+#[derive(Debug, FromXml)]
 #[xml(rename = "operation", ns(XMLNS))]
-pub struct Operation<'a> {
+pub struct Operation {
     /// Custom value for`OperationKind::Custom`
     #[xml(attribute, rename = "op")]
-    op: Option<Cow<'a, str>>,
+    op: Option<String>,
     /// The operation
     #[xml(direct)]
     kind: OperationType,
 }
 
-impl Operation<'_> {
+impl Operation {
     pub fn kind(&self) -> Result<OperationKind, Error> {
         Ok(match self.kind {
             OperationType::Create => OperationKind::Create,
@@ -108,7 +110,7 @@ pub enum OperationKind<'a> {
 
 /// Internal Enumerated list of operations, with extensibility via "custom"
 // See todo on `Operation` struct for reason why this is internal only.
-#[derive(Debug, Copy, Clone, FromXml, ToXml)]
+#[derive(Debug, Copy, Clone, FromXml)]
 #[xml(scalar, rename_all = "camelCase", ns(XMLNS))]
 enum OperationType {
     Create,
@@ -126,18 +128,18 @@ enum OperationType {
 /// Case identifier type for `<changePoll:caseId>`
 // todo: Allow struct enum variants with #[xml(attribute, rename = "op")] in instant-xml,
 // to make this struct more ergonomic.
-#[derive(Debug, FromXml, ToXml)]
+#[derive(Debug, FromXml)]
 #[xml(rename = "caseId", ns(XMLNS))]
-pub struct CaseIdentifier<'a> {
+pub struct CaseIdentifier {
     #[xml(attribute, rename = "type")]
     id_type: CaseIdentifierType,
     #[xml(attribute)]
-    name: Option<Cow<'a, str>>,
+    name: Option<String>,
     #[xml(direct)]
-    pub id: Cow<'a, str>,
+    pub id: String,
 }
 
-impl CaseIdentifier<'_> {
+impl CaseIdentifier {
     pub fn kind(&self) -> Result<CaseIdentifierKind, Error> {
         Ok(match self.id_type {
             CaseIdentifierType::Udrp => CaseIdentifierKind::Udrp,
@@ -164,7 +166,7 @@ pub enum CaseIdentifierKind<'a> {
 
 /// Internal enumerated list of case identifier types
 // See todo on `CaseIdentifier` struct for reason why this is internal only.
-#[derive(Debug, Copy, Clone, FromXml, ToXml)]
+#[derive(Debug, Copy, Clone, FromXml)]
 #[xml(scalar, rename_all = "camelCase")]
 enum CaseIdentifierType {
     Udrp,
@@ -182,7 +184,7 @@ enum CaseIdentifierType {
 // namespaces in additional specs (for example in RFC8590).
 // Currently, instant-xml strongly ties namespaces to schemas and does not allow
 // a way out of it for this particular case.
-#[derive(Debug, Eq, FromXml, PartialEq, ToXml)]
+#[derive(Debug, Eq, FromXml, PartialEq)]
 #[xml(rename = "reason", ns(XMLNS))]
 pub struct Reason {
     /// The language of the response. If not specified, assume "en" (English).
@@ -193,7 +195,7 @@ pub struct Reason {
 }
 
 /// Enumerated state of the object in the poll message
-#[derive(Debug, Default, Copy, Clone, PartialEq, Eq, FromXml, ToXml)]
+#[derive(Debug, Default, Copy, Clone, PartialEq, Eq, FromXml)]
 #[xml(scalar, rename_all = "camelCase")]
 pub enum State {
     Before,
@@ -210,7 +212,7 @@ mod tests {
 
     #[test]
     fn urs_lock_before() {
-        let object = response_from_file_with_ext::<Poll, ChangePoll>(
+        let object = response_from_file_with_ext::<Poll, ChangePollExtension>(
             "response/extensions/change_poll/urs_lock_before.xml",
         );
 
@@ -253,7 +255,7 @@ mod tests {
 
     #[test]
     fn urs_lock_after() {
-        let object = response_from_file_with_ext::<Poll, ChangePoll>(
+        let object = response_from_file_with_ext::<Poll, ChangePollExtension>(
             "response/extensions/change_poll/urs_lock_after.xml",
         );
 
@@ -273,7 +275,7 @@ mod tests {
 
     #[test]
     fn custom_sync_after() {
-        let object = response_from_file_with_ext::<Poll, ChangePoll>(
+        let object = response_from_file_with_ext::<Poll, ChangePollExtension>(
             "response/extensions/change_poll/custom_sync_after.xml",
         );
 
@@ -302,7 +304,7 @@ mod tests {
 
     #[test]
     fn delete_before() {
-        let object = response_from_file_with_ext::<Poll, ChangePoll>(
+        let object = response_from_file_with_ext::<Poll, ChangePollExtension>(
             "response/extensions/change_poll/delete_before.xml",
         );
 
@@ -321,7 +323,7 @@ mod tests {
 
     #[test]
     fn autopurge_before() {
-        let object = response_from_file_with_ext::<Poll, ChangePoll>(
+        let object = response_from_file_with_ext::<Poll, ChangePollExtension>(
             "response/extensions/change_poll/autopurge_before.xml",
         );
 
@@ -340,7 +342,7 @@ mod tests {
 
     #[test]
     fn update_after() {
-        let object = response_from_file_with_ext::<Poll, ChangePoll>(
+        let object = response_from_file_with_ext::<Poll, ChangePollExtension>(
             "response/extensions/change_poll/update_after.xml",
         );
 
