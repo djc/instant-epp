@@ -69,6 +69,7 @@ pub enum RgpRequestResponse {
 #[cfg(test)]
 mod tests {
     use super::{RgpRestoreRequest, Update};
+    use crate::common::NoExtension;
     use crate::domain::info::DomainInfo;
     use crate::domain::update::{DomainChangeInfo, DomainUpdate};
     use crate::extensions::rgp::request::RgpRequestResponse;
@@ -99,15 +100,16 @@ mod tests {
 
     #[test]
     fn request_response() {
-        let object = response_from_file_with_ext::<DomainUpdate, Update<RgpRestoreRequest>>(
-            "response/extensions/rgp_restore.xml",
-        );
-        let ext = object.extension.unwrap();
+        let object =
+            response_from_file_with_ext::<DomainUpdate, Update<RgpRestoreRequest>, NoExtension>(
+                "response/extensions/rgp_restore.xml",
+            );
+        let ext = object.command_extension().unwrap();
 
         assert_eq!(object.result.code, ResultCode::CommandCompletedSuccessfully);
         assert_eq!(object.result.message, SUCCESS_MSG);
 
-        let data = match ext.data {
+        let data = match ext {
             RgpRequestResponse::Update(data) => data,
             _ => panic!("Unexpected response type"),
         };
@@ -118,12 +120,13 @@ mod tests {
 
     #[test]
     fn domain_info_request_response() {
-        let object = response_from_file_with_ext::<DomainInfo, Update<RgpRestoreRequest>>(
-            "response/extensions/domain_info_rgp.xml",
-        );
-        let ext = object.extension.unwrap();
+        let object =
+            response_from_file_with_ext::<DomainInfo, Update<RgpRestoreRequest>, NoExtension>(
+                "response/extensions/domain_info_rgp.xml",
+            );
+        let ext = object.command_extension().unwrap();
 
-        let data = match ext.data {
+        let data = match ext {
             RgpRequestResponse::Info(data) => data,
             _ => panic!("Unexpected response type"),
         };

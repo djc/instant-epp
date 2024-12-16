@@ -9,7 +9,7 @@ use crate::{
     client::RequestData,
     common::NoExtension,
     request::{Command, CommandWrapper, Extension, Transaction},
-    response::Response,
+    response::{ConnectionExtensionResponse, Response},
     xml,
 };
 
@@ -53,23 +53,24 @@ pub(crate) fn assert_serialized<'c, 'e, Cmd, Ext>(
 
 pub(crate) fn response_from_file<'c, Cmd>(
     path: &str,
-) -> Response<Cmd::Response, <NoExtension as Extension>::Response>
+) -> Response<Cmd::Response, <NoExtension as Extension>::Response, NoExtension>
 where
     Cmd: Transaction<NoExtension> + Command + 'c,
 {
-    response_from_file_with_ext::<Cmd, NoExtension>(path)
+    response_from_file_with_ext::<Cmd, NoExtension, NoExtension>(path)
 }
 
-pub(crate) fn response_from_file_with_ext<Cmd, Ext>(
+pub(crate) fn response_from_file_with_ext<Cmd, CmdExt, ConnExt>(
     path: &str,
-) -> Response<Cmd::Response, Ext::Response>
+) -> Response<Cmd::Response, CmdExt::Response, ConnExt>
 where
     Cmd: Transaction<NoExtension> + Command,
-    Ext: Extension,
+    CmdExt: Extension,
+    ConnExt: ConnectionExtensionResponse,
 {
     let xml = get_xml(path).unwrap();
     dbg!(&xml);
-    let rsp = xml::deserialize::<Response<Cmd::Response, Ext::Response>>(&xml).unwrap();
+    let rsp = xml::deserialize::<Response<Cmd::Response, CmdExt::Response, ConnExt>>(&xml).unwrap();
     assert!(rsp.result.code.is_success());
     rsp
 }

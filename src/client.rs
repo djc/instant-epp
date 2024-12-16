@@ -1,3 +1,4 @@
+use std::marker::PhantomData;
 use std::time::Duration;
 
 #[cfg(feature = "__rustls")]
@@ -10,7 +11,7 @@ use crate::connection::EppConnection;
 use crate::error::Error;
 use crate::hello::{Greeting, Hello};
 use crate::request::{Command, CommandWrapper, Extension, Transaction};
-use crate::response::{Response, ResponseStatus};
+use crate::response::{ConnectionExtensionResponse, Response, ResponseStatus};
 use crate::xml;
 
 /// An `EppClient` provides an interface to sending EPP requests to a registry
@@ -64,12 +65,13 @@ use crate::xml;
 /// Domain: eppdev.com, Available: 1
 /// Domain: eppdev.net, Available: 1
 /// ```
-pub struct EppClient<C: Connector> {
+pub struct EppClient<C: Connector, ConnExt> {
     connection: EppConnection<C>,
+    phantom_type: PhantomData<ConnExt>,
 }
 
 #[cfg(feature = "__rustls")]
-impl EppClient<RustlsConnector> {
+impl<ConnExt: ConnectionExtensionResponse> EppClient<RustlsConnector, ConnExt> {
     /// Connect to the specified `addr` and `hostname` over TLS
     ///
     /// The `registry` is used as a name in internal logging; `host` provides the host name
@@ -97,11 +99,12 @@ impl EppClient<RustlsConnector> {
     }
 }
 
-impl<C: Connector> EppClient<C> {
+impl<C: Connector, ConnExt: ConnectionExtensionResponse> EppClient<C, ConnExt> {
     /// Create an `EppClient` from an already established connection
     pub async fn new(connector: C, registry: String, timeout: Duration) -> Result<Self, Error> {
         Ok(Self {
             connection: EppConnection::new(connector, registry, timeout).await?,
+            phantom_type: PhantomData,
         })
     }
 
@@ -120,7 +123,7 @@ impl<C: Connector> EppClient<C> {
         &mut self,
         data: impl Into<RequestData<'c, 'e, Cmd, CmdExt>>,
         id: &str,
-    ) -> Result<Response<Cmd::Response, CmdExt::Response>, Error>
+    ) -> Result<Response<Cmd::Response, CmdExt::Response, ConnExt>, Error>
     where
         Cmd: Transaction<CmdExt> + Command + 'c,
         CmdExt: Extension + 'e,
@@ -133,13 +136,15 @@ impl<C: Connector> EppClient<C> {
         let response = self.connection.transact(&xml)?.await?;
         debug!("{}: response: {}", self.connection.registry, &response);
 
-        let rsp = match xml::deserialize::<Response<Cmd::Response, CmdExt::Response>>(&response) {
-            Ok(rsp) => rsp,
-            Err(e) => {
-                error!(%response, "failed to deserialize response for transaction: {e}");
-                return Err(e);
-            }
-        };
+        let rsp =
+            match xml::deserialize::<Response<Cmd::Response, CmdExt::Response, ConnExt>>(&response)
+            {
+                Ok(rsp) => rsp,
+                Err(e) => {
+                    error!(%response, "failed to deserialize response for transaction: {e}");
+                    return Err(e);
+                }
+            };
 
         if rsp.result.code.is_success() {
             return Ok(rsp);

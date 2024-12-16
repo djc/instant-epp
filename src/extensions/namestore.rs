@@ -75,6 +75,7 @@ pub struct NameStore<'a> {
 #[cfg(test)]
 mod tests {
     use super::NameStore;
+    use crate::common::NoExtension;
     use crate::domain::check::DomainCheck;
     use crate::tests::{assert_serialized, response_from_file_with_ext};
 
@@ -94,10 +95,10 @@ mod tests {
 
     #[test]
     fn response() {
-        let object = response_from_file_with_ext::<DomainCheck, NameStore>(
+        let object = response_from_file_with_ext::<DomainCheck, NameStore, NoExtension>(
             "response/extensions/namestore.xml",
         );
-        let ext = object.extension().unwrap();
+        let ext = &object.command_extension().unwrap();
         assert_eq!(ext.subproduct, "com");
     }
 }

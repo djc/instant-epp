@@ -7,18 +7,11 @@ use std::borrow::Cow;
 
 use instant_xml::{Error, FromXml, ToXml};
 
-use crate::{
-    poll::Poll,
-    request::{Extension, Transaction},
-};
+use crate::response::ConnectionExtensionResponse;
 
 pub const XMLNS: &str = "urn:ietf:params:xml:ns:changePoll-1.0";
 
-impl Transaction<ChangePoll<'_>> for Poll {}
-
-impl Extension for ChangePoll<'_> {
-    type Response = ChangePoll<'static>;
-}
+impl ConnectionExtensionResponse for ChangePoll<'_> {}
 
 /// Type for EPP XML `<changePoll>` extension
 ///
@@ -204,13 +197,14 @@ pub enum State {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::common::NoExtension;
     use crate::poll::Poll;
     use crate::response::ResultCode;
     use crate::tests::{response_from_file_with_ext, CLTRID, SVTRID};
 
     #[test]
     fn urs_lock_before() {
-        let object = response_from_file_with_ext::<Poll, ChangePoll>(
+        let object = response_from_file_with_ext::<Poll, NoExtension, ChangePoll>(
             "response/extensions/change_poll/urs_lock_before.xml",
         );
 
@@ -223,29 +217,18 @@ mod tests {
             "Command completed successfully; ack to dequeue"
         );
 
-        assert_eq!(object.extension().unwrap().state.unwrap(), State::Before);
+        let ext = &object.connection_extension().unwrap();
+
+        assert_eq!(ext.state.unwrap(), State::Before);
+        assert_eq!(ext.operation.kind().unwrap(), OperationKind::Update);
+        assert_eq!(ext.date, "2013-10-22T14:25:57.0Z");
+        assert_eq!(ext.server_tr_id, "12345-XYZ");
+        assert_eq!(ext.who, "URS Admin");
         assert_eq!(
-            object.extension().unwrap().operation.kind().unwrap(),
-            OperationKind::Update
-        );
-        assert_eq!(object.extension().unwrap().date, "2013-10-22T14:25:57.0Z");
-        assert_eq!(object.extension().unwrap().server_tr_id, "12345-XYZ");
-        assert_eq!(object.extension().unwrap().who, "URS Admin");
-        assert_eq!(
-            object
-                .extension()
-                .unwrap()
-                .case_id
-                .as_ref()
-                .unwrap()
-                .kind()
-                .unwrap(),
+            ext.case_id.as_ref().unwrap().kind().unwrap(),
             CaseIdentifierKind::Urs
         );
-        assert_eq!(
-            object.extension().unwrap().reason.as_ref().unwrap().inner,
-            "URS Lock"
-        );
+        assert_eq!(ext.reason.as_ref().unwrap().inner, "URS Lock");
 
         assert_eq!(object.tr_ids.client_tr_id.unwrap(), CLTRID);
         assert_eq!(object.tr_ids.server_tr_id, SVTRID);
@@ -253,7 +236,7 @@ mod tests {
 
     #[test]
     fn urs_lock_after() {
-        let object = response_from_file_with_ext::<Poll, ChangePoll>(
+        let object = response_from_file_with_ext::<Poll, NoExtension, ChangePoll>(
             "response/extensions/change_poll/urs_lock_after.xml",
         );
 
@@ -265,7 +248,10 @@ mod tests {
             object.result.message,
             "Command completed successfully; ack to dequeue"
         );
-        assert_eq!(object.extension().unwrap().state.unwrap(), State::After);
+
+        let ext = &object.connection_extension().unwrap();
+
+        assert_eq!(ext.state.unwrap(), State::After);
 
         assert_eq!(object.tr_ids.client_tr_id.unwrap(), CLTRID);
         assert_eq!(object.tr_ids.server_tr_id, SVTRID);
@@ -273,7 +259,7 @@ mod tests {
 
     #[test]
     fn custom_sync_after() {
-        let object = response_from_file_with_ext::<Poll, ChangePoll>(
+        let object = response_from_file_with_ext::<Poll, NoExtension, ChangePoll>(
             "response/extensions/change_poll/custom_sync_after.xml",
         );
 
@@ -286,15 +272,11 @@ mod tests {
             "Command completed successfully; ack to dequeue"
         );
 
-        assert_eq!(
-            object.extension().unwrap().operation.kind().unwrap(),
-            OperationKind::Custom("sync")
-        );
-        assert_eq!(object.extension().unwrap().who, "CSR");
-        assert_eq!(
-            object.extension().unwrap().reason.as_ref().unwrap().inner,
-            "Customer sync request"
-        );
+        let ext = &object.connection_extension().unwrap();
+
+        assert_eq!(ext.operation.kind().unwrap(), OperationKind::Custom("sync"));
+        assert_eq!(ext.who, "CSR");
+        assert_eq!(ext.reason.as_ref().unwrap().inner, "Customer sync request");
 
         assert_eq!(object.tr_ids.client_tr_id.unwrap(), CLTRID);
         assert_eq!(object.tr_ids.server_tr_id, SVTRID);
@@ -302,7 +284,7 @@ mod tests {
 
     #[test]
     fn delete_before() {
-        let object = response_from_file_with_ext::<Poll, ChangePoll>(
+        let object = response_from_file_with_ext::<Poll, NoExtension, ChangePoll>(
             "response/extensions/change_poll/delete_before.xml",
         );
 
@@ -321,7 +303,7 @@ mod tests {
 
     #[test]
     fn autopurge_before() {
-        let object = response_from_file_with_ext::<Poll, ChangePoll>(
+        let object = response_from_file_with_ext::<Poll, NoExtension, ChangePoll>(
             "response/extensions/change_poll/autopurge_before.xml",
         );
 
@@ -340,7 +322,7 @@ mod tests {
 
     #[test]
     fn update_after() {
-        let object = response_from_file_with_ext::<Poll, ChangePoll>(
+        let object = response_from_file_with_ext::<Poll, NoExtension, ChangePoll>(
             "response/extensions/change_poll/update_after.xml",
         );
 
