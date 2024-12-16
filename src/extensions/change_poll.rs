@@ -3,40 +3,31 @@
 //! As described in RFC8590: [Change Poll Extension for the Extensible Provisioning Protocol (EPP)](https://www.rfc-editor.org/rfc/rfc8590.html).
 //! Tests cases in `tests/resources/response/extensions/changepoll`` are taken from the RFC.
 
-use std::borrow::Cow;
-
 use instant_xml::{Error, FromXml, ToXml};
 
-use crate::{
-    poll::Poll,
-    request::{Extension, Transaction},
-};
+use crate::response::ConnectionExtensionResponse;
 
 pub const XMLNS: &str = "urn:ietf:params:xml:ns:changePoll-1.0";
 
-impl Transaction<ChangePoll<'_>> for Poll {}
-
-impl Extension for ChangePoll<'_> {
-    type Response = ChangePoll<'static>;
-}
+impl ConnectionExtensionResponse for ChangePoll {}
 
 /// Type for EPP XML `<changePoll>` extension
 ///
 /// Attributes associated with the change
 #[derive(Debug, FromXml, ToXml)]
 #[xml(rename = "changeData", ns(XMLNS))]
-pub struct ChangePoll<'a> {
+pub struct ChangePoll {
     /// Transform operation executed on the object
-    pub operation: Operation<'a>,
+    pub operation: Operation,
     /// Date and time when the operation was executed
-    pub date: Cow<'a, str>,
+    pub date: String,
     /// Server transaction identifier of the operation
     #[xml(rename = "svTRID")]
-    pub server_tr_id: Cow<'a, str>,
+    pub server_tr_id: String,
     /// Who executed the operation
-    pub who: Cow<'a, str>,
+    pub who: String,
     /// Case identifier associated with the operation
-    pub case_id: Option<CaseIdentifier<'a>>,
+    pub case_id: Option<CaseIdentifier>,
     /// Reason for executing the operation
     pub reason: Option<Reason>,
     /// Enumerated state of the object in the poll message
@@ -46,7 +37,7 @@ pub struct ChangePoll<'a> {
     state: Option<State>,
 }
 
-impl ChangePoll<'_> {
+impl ChangePoll {
     /// State reflects if the `infData` describes the object before or after the operation
     pub fn state(&self) -> State {
         self.state.unwrap_or_default()
@@ -58,16 +49,16 @@ impl ChangePoll<'_> {
 // to make this struct more ergonomic.
 #[derive(Debug, FromXml, ToXml)]
 #[xml(rename = "operation", ns(XMLNS))]
-pub struct Operation<'a> {
+pub struct Operation {
     /// Custom value for`OperationKind::Custom`
     #[xml(attribute, rename = "op")]
-    op: Option<Cow<'a, str>>,
+    op: Option<String>,
     /// The operation
     #[xml(direct)]
     kind: OperationType,
 }
 
-impl Operation<'_> {
+impl Operation {
     pub fn kind(&self) -> Result<OperationKind, Error> {
         Ok(match self.kind {
             OperationType::Create => OperationKind::Create,
@@ -128,16 +119,16 @@ enum OperationType {
 // to make this struct more ergonomic.
 #[derive(Debug, FromXml, ToXml)]
 #[xml(rename = "caseId", ns(XMLNS))]
-pub struct CaseIdentifier<'a> {
+pub struct CaseIdentifier {
     #[xml(attribute, rename = "type")]
     id_type: CaseIdentifierType,
     #[xml(attribute)]
-    name: Option<Cow<'a, str>>,
+    name: Option<String>,
     #[xml(direct)]
-    pub id: Cow<'a, str>,
+    pub id: String,
 }
 
-impl CaseIdentifier<'_> {
+impl CaseIdentifier {
     pub fn kind(&self) -> Result<CaseIdentifierKind, Error> {
         Ok(match self.id_type {
             CaseIdentifierType::Udrp => CaseIdentifierKind::Udrp,
@@ -204,13 +195,14 @@ pub enum State {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::common::NoExtension;
     use crate::poll::Poll;
     use crate::response::ResultCode;
     use crate::tests::{response_from_file_with_ext, CLTRID, SVTRID};
 
     #[test]
     fn urs_lock_before() {
-        let object = response_from_file_with_ext::<Poll, ChangePoll>(
+        let object = response_from_file_with_ext::<Poll, NoExtension, ChangePoll>(
             "response/extensions/change_poll/urs_lock_before.xml",
         );
 
@@ -223,29 +215,18 @@ mod tests {
             "Command completed successfully; ack to dequeue"
         );
 
-        assert_eq!(object.extension().unwrap().state.unwrap(), State::Before);
+        let ext = &object.connection_extension().unwrap();
+
+        assert_eq!(ext.state.unwrap(), State::Before);
+        assert_eq!(ext.operation.kind().unwrap(), OperationKind::Update);
+        assert_eq!(ext.date, "2013-10-22T14:25:57.0Z");
+        assert_eq!(ext.server_tr_id, "12345-XYZ");
+        assert_eq!(ext.who, "URS Admin");
         assert_eq!(
-            object.extension().unwrap().operation.kind().unwrap(),
-            OperationKind::Update
-        );
-        assert_eq!(object.extension().unwrap().date, "2013-10-22T14:25:57.0Z");
-        assert_eq!(object.extension().unwrap().server_tr_id, "12345-XYZ");
-        assert_eq!(object.extension().unwrap().who, "URS Admin");
-        assert_eq!(
-            object
-                .extension()
-                .unwrap()
-                .case_id
-                .as_ref()
-                .unwrap()
-                .kind()
-                .unwrap(),
+            ext.case_id.as_ref().unwrap().kind().unwrap(),
             CaseIdentifierKind::Urs
         );
-        assert_eq!(
-            object.extension().unwrap().reason.as_ref().unwrap().inner,
-            "URS Lock"
-        );
+        assert_eq!(ext.reason.as_ref().unwrap().inner, "URS Lock");
 
         assert_eq!(object.tr_ids.client_tr_id.unwrap(), CLTRID);
         assert_eq!(object.tr_ids.server_tr_id, SVTRID);
@@ -253,7 +234,7 @@ mod tests {
 
     #[test]
     fn urs_lock_after() {
-        let object = response_from_file_with_ext::<Poll, ChangePoll>(
+        let object = response_from_file_with_ext::<Poll, NoExtension, ChangePoll>(
             "response/extensions/change_poll/urs_lock_after.xml",
         );
 
@@ -265,7 +246,10 @@ mod tests {
             object.result.message,
             "Command completed successfully; ack to dequeue"
         );
-        assert_eq!(object.extension().unwrap().state.unwrap(), State::After);
+
+        let ext = &object.connection_extension().unwrap();
+
+        assert_eq!(ext.state.unwrap(), State::After);
 
         assert_eq!(object.tr_ids.client_tr_id.unwrap(), CLTRID);
         assert_eq!(object.tr_ids.server_tr_id, SVTRID);
@@ -273,7 +257,7 @@ mod tests {
 
     #[test]
     fn custom_sync_after() {
-        let object = response_from_file_with_ext::<Poll, ChangePoll>(
+        let object = response_from_file_with_ext::<Poll, NoExtension, ChangePoll>(
             "response/extensions/change_poll/custom_sync_after.xml",
         );
 
@@ -286,15 +270,11 @@ mod tests {
             "Command completed successfully; ack to dequeue"
         );
 
-        assert_eq!(
-            object.extension().unwrap().operation.kind().unwrap(),
-            OperationKind::Custom("sync")
-        );
-        assert_eq!(object.extension().unwrap().who, "CSR");
-        assert_eq!(
-            object.extension().unwrap().reason.as_ref().unwrap().inner,
-            "Customer sync request"
-        );
+        let ext = &object.connection_extension().unwrap();
+
+        assert_eq!(ext.operation.kind().unwrap(), OperationKind::Custom("sync"));
+        assert_eq!(ext.who, "CSR");
+        assert_eq!(ext.reason.as_ref().unwrap().inner, "Customer sync request");
 
         assert_eq!(object.tr_ids.client_tr_id.unwrap(), CLTRID);
         assert_eq!(object.tr_ids.server_tr_id, SVTRID);
@@ -302,7 +282,7 @@ mod tests {
 
     #[test]
     fn delete_before() {
-        let object = response_from_file_with_ext::<Poll, ChangePoll>(
+        let object = response_from_file_with_ext::<Poll, NoExtension, ChangePoll>(
             "response/extensions/change_poll/delete_before.xml",
         );
 
@@ -321,7 +301,7 @@ mod tests {
 
     #[test]
     fn autopurge_before() {
-        let object = response_from_file_with_ext::<Poll, ChangePoll>(
+        let object = response_from_file_with_ext::<Poll, NoExtension, ChangePoll>(
             "response/extensions/change_poll/autopurge_before.xml",
         );
 
@@ -340,7 +320,7 @@ mod tests {
 
     #[test]
     fn update_after() {
-        let object = response_from_file_with_ext::<Poll, ChangePoll>(
+        let object = response_from_file_with_ext::<Poll, NoExtension, ChangePoll>(
             "response/extensions/change_poll/update_after.xml",
         );
 

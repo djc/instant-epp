@@ -3,9 +3,9 @@
 use std::fmt::Debug;
 
 use chrono::{DateTime, Utc};
-use instant_xml::{FromXml, Kind};
+use instant_xml::{Deserializer, FromXml, FromXmlOwned, Id, Kind};
 
-use crate::common::EPP_XMLNS;
+use crate::common::{NoExtension, EPP_XMLNS};
 
 /// Type corresponding to the `<undef>` tag an EPP response XML
 #[derive(Debug, Eq, FromXml, PartialEq)]
@@ -238,7 +238,7 @@ pub struct Message {
 /// Type corresponding to the `<response>` tag in an EPP response XML
 /// containing an `<extension>` tag
 #[xml(rename = "response", ns(EPP_XMLNS))]
-pub struct Response<D, E> {
+pub struct Response<D, CmdExt, ConnExt> {
     /// Data under the `<result>` tag
     pub result: EppResult,
     /// Data under the `<msgQ>` tag
@@ -247,7 +247,7 @@ pub struct Response<D, E> {
     /// Data under the `<resData>` tag
     pub res_data: Option<ResponseData<D>>,
     /// Data under the `<extension>` tag
-    pub extension: Option<Extension<E>>,
+    pub extension: Option<Extension<CmdExt, ConnExt>>,
     /// Data under the `<trID>` tag
     pub tr_ids: ResponseTRID,
 }
@@ -276,7 +276,7 @@ pub struct ResponseStatus {
     pub tr_ids: ResponseTRID,
 }
 
-impl<T, E> Response<T, E> {
+impl<T, CmdExt, ConnExt> Response<T, CmdExt, ConnExt> {
     /// Returns the data under the corresponding `<resData>` from the EPP XML
     pub fn res_data(&self) -> Option<&T> {
         match &self.res_data {
@@ -285,9 +285,16 @@ impl<T, E> Response<T, E> {
         }
     }
 
-    pub fn extension(&self) -> Option<&E> {
+    pub fn command_extension(&self) -> Option<&CmdExt> {
         match &self.extension {
-            Some(extension) => Some(&extension.data),
+            Some(extension) => extension.data.command.as_ref(),
+            None => None,
+        }
+    }
+
+    pub fn connection_extension(&self) -> Option<&ConnExt> {
+        match &self.extension {
+            Some(extension) => extension.data.connection.as_ref(),
             None => None,
         }
     }
@@ -303,8 +310,118 @@ impl<T, E> Response<T, E> {
 
 #[derive(Debug, Eq, FromXml, PartialEq)]
 #[xml(rename = "extension", ns(EPP_XMLNS))]
-pub struct Extension<E> {
-    pub data: E,
+pub struct Extension<CmdExt, ConnExt> {
+    pub data: CombinedExtensions<CmdExt, ConnExt>,
+}
+
+/// Types implementing this can be used as ConnectionExtensions.
+///
+/// Their type will be assumed to be in the response's extension element.
+pub trait ConnectionExtensionResponse: FromXmlOwned + Debug {}
+
+impl ConnectionExtensionResponse for NoExtension {}
+
+impl<T: ConnectionExtensionResponse> ConnectionExtensionResponse for Option<T> {}
+
+/// Combines connection extensions and command extensions
+///
+/// Some extensions are sent by the server no matter if an extension was defined for the command.
+#[derive(Debug, Eq, PartialEq)]
+pub struct CombinedExtensions<CmdExt, ConnExt> {
+    pub command: Option<CmdExt>,
+    pub connection: Option<ConnExt>,
+}
+
+// // This manual impl is needed because instant-xml is not able to create the correct derived impl.
+// // for this transparent type. It fails to set the correct bounds for struct __CombinedExtensionsAccumulator.
+impl<'xml, CmdExt: FromXml<'xml>, ConnExt: FromXml<'xml>> FromXml<'xml>
+    for CombinedExtensions<CmdExt, ConnExt>
+{
+    #[inline]
+    fn matches(id: Id<'_>, _: Option<Id<'_>>) -> bool {
+        <CmdExt as FromXml<'xml>>::matches(id, None)
+            || <ConnExt as FromXml<'xml>>::matches(id, None)
+    }
+    fn deserialize<'cx>(
+        into: &mut Self::Accumulator,
+        _: &'static str,
+        deserializer: &mut Deserializer<'cx, 'xml>,
+    ) -> Result<(), instant_xml::Error> {
+        use instant_xml::Kind;
+        let current = deserializer.parent();
+        if <CmdExt as FromXml<'xml>>::matches(current, None) {
+            match <CmdExt as FromXml>::KIND {
+                Kind::Element => {
+                    <Option<CmdExt>>::deserialize(
+                        &mut into.command,
+                        "CombinedExtensions::command",
+                        deserializer,
+                    )?;
+                }
+                Kind::Scalar => {
+                    <Option<CmdExt>>::deserialize(
+                        &mut into.command,
+                        "CombinedExtensions::command",
+                        deserializer,
+                    )?;
+                    deserializer.ignore()?;
+                }
+            }
+        } else if <ConnExt as FromXml<'xml>>::matches(current, None) {
+            match <ConnExt as FromXml>::KIND {
+                Kind::Element => {
+                    <Option<ConnExt>>::deserialize(
+                        &mut into.connection,
+                        "CombinedExtensions::connection",
+                        deserializer,
+                    )?;
+                }
+                Kind::Scalar => {
+                    <Option<ConnExt>>::deserialize(
+                        &mut into.connection,
+                        "CombinedExtensions::connection",
+                        deserializer,
+                    )?;
+                    deserializer.ignore()?;
+                }
+            }
+        }
+        Ok(())
+    }
+    type Accumulator = __CombinedExtensionsAccumulator<'xml, CmdExt, ConnExt>;
+    const KIND: instant_xml::Kind = instant_xml::Kind::Element;
+}
+
+pub struct __CombinedExtensionsAccumulator<'xml, CommandExt: FromXml<'xml>, ConnExt: FromXml<'xml>>
+{
+    command: <Option<CommandExt> as FromXml<'xml>>::Accumulator,
+    connection: <Option<ConnExt> as FromXml<'xml>>::Accumulator,
+}
+
+impl<'xml, CommandExt: FromXml<'xml>, ConnExt: FromXml<'xml>>
+    instant_xml::Accumulate<CombinedExtensions<CommandExt, ConnExt>>
+    for __CombinedExtensionsAccumulator<'xml, CommandExt, ConnExt>
+{
+    fn try_done(
+        self,
+        _: &'static str,
+    ) -> Result<CombinedExtensions<CommandExt, ConnExt>, instant_xml::Error> {
+        Ok(CombinedExtensions {
+            command: self.command.try_done("CombinedExtensions::command")?,
+            connection: self.connection.try_done("CombinedExtensions::connection")?,
+        })
+    }
+}
+
+impl<'xml, CommandExt: FromXml<'xml>, ConnExt: instant_xml::FromXml<'xml>> Default
+    for __CombinedExtensionsAccumulator<'xml, CommandExt, ConnExt>
+{
+    fn default() -> Self {
+        Self {
+            command: Default::default(),
+            connection: Default::default(),
+        }
+    }
 }
 
 #[cfg(test)]

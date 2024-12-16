@@ -4,11 +4,14 @@ use std::str;
 use std::time::Duration;
 
 use async_trait::async_trait;
+use instant_epp::extensions::change_poll::ChangePoll;
+use instant_epp::poll::{Poll, PollData};
 use regex::Regex;
 use tokio::time::timeout;
 use tokio_test::io::Builder;
 
 use instant_epp::client::{Connector, EppClient};
+use instant_epp::common::NoExtension;
 use instant_epp::domain::{DomainCheck, DomainContact, DomainCreate, Period, PeriodLength};
 use instant_epp::login::Login;
 use instant_epp::response::ResultCode;
@@ -100,9 +103,10 @@ async fn client() {
         }
     }
 
-    let mut client = EppClient::new(FakeConnector, "test".into(), Duration::from_secs(5))
-        .await
-        .unwrap();
+    let mut client =
+        EppClient::<_, NoExtension>::new(FakeConnector, "test".into(), Duration::from_secs(5))
+            .await
+            .unwrap();
 
     assert_eq!(client.xml_greeting(), xml("response/greeting.xml"));
     let rsp = client
@@ -176,9 +180,10 @@ async fn dropped() {
         }
     }
 
-    let mut client = EppClient::new(FakeConnector, "test".into(), Duration::from_secs(5))
-        .await
-        .unwrap();
+    let mut client =
+        EppClient::<_, NoExtension>::new(FakeConnector, "test".into(), Duration::from_secs(5))
+            .await
+            .unwrap();
 
     assert_eq!(client.xml_greeting(), xml("response/greeting.xml"));
     let rsp = client
@@ -241,4 +246,63 @@ async fn dropped() {
 
     let rsp = client.transact(&create, CLTRID).await.unwrap();
     assert_eq!(rsp.result.code, ResultCode::CommandCompletedSuccessfully);
+}
+
+#[tokio::test]
+async fn poll_with_extensions() {
+    let _guard = log_to_stdout();
+
+    struct FakeConnector;
+
+    #[async_trait]
+    impl Connector for FakeConnector {
+        type Connection = tokio_test::io::Mock;
+
+        async fn connect(&self, _: Duration) -> Result<Self::Connection, Error> {
+            Ok(build_stream(&[
+                "response/greeting.xml",
+                "request/login.xml",
+                "response/login.xml",
+                "request/poll/poll.xml",
+                "response/extensions/change_poll/urs_lock_after.xml",
+            ])
+            .build())
+        }
+    }
+
+    let mut client =
+        EppClient::<_, ChangePoll>::new(FakeConnector, "test".into(), Duration::from_secs(5))
+            .await
+            .unwrap();
+
+    assert_eq!(client.xml_greeting(), xml("response/greeting.xml"));
+    let rsp = client
+        .transact(
+            &Login::new(
+                "username",
+                "password",
+                Some("new-password"),
+                Some(&["http://schema.ispapi.net/epp/xml/keyvalue-1.0"]),
+            ),
+            CLTRID,
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(rsp.result.code, ResultCode::CommandCompletedSuccessfully);
+
+    let rsp = client.transact(&Poll, CLTRID).await.unwrap();
+    assert_eq!(
+        rsp.result.code,
+        ResultCode::CommandCompletedSuccessfullyAckToDequeue
+    );
+
+    let data = rsp.res_data().unwrap();
+    let data = match data {
+        PollData::DomainInfo(info_data) => info_data,
+        _ => panic!("expected domain:infData"),
+    };
+    assert_eq!(data.name, "domain.example");
+    let ext = rsp.connection_extension().unwrap();
+    assert_eq!(ext.case_id.as_ref().unwrap().id, "urs123");
 }
