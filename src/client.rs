@@ -320,7 +320,7 @@ mod rustls_connector {
                 identity,
             } = self;
 
-            let builder = ClientConfig::builder().with_platform_verifier();
+            let builder = ClientConfig::builder().with_platform_verifier()?;
             let config = match identity {
                 Some((certs, key)) => builder.with_client_auth_cert(certs, key)?,
                 None => builder.with_no_client_auth(),
