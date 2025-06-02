@@ -187,7 +187,7 @@ mod tests {
             assert_eq!(host.name, "ns.test.com");
 
             assert_eq!(host.roid, "1234");
-            assert!(host.statuses.iter().any(|&s| s == Status::Ok));
+            assert!(host.statuses.contains(&Status::Ok));
             assert!(host
                 .addresses
                 .iter()
