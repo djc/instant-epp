@@ -70,7 +70,7 @@ pub struct Operation {
 }
 
 impl Operation {
-    pub fn kind(&self) -> Result<OperationKind, Error> {
+    pub fn kind(&self) -> Result<OperationKind<'_>, Error> {
         Ok(match self.kind {
             OperationType::Create => OperationKind::Create,
             OperationType::Delete => OperationKind::Delete,
@@ -140,7 +140,7 @@ pub struct CaseIdentifier {
 }
 
 impl CaseIdentifier {
-    pub fn kind(&self) -> Result<CaseIdentifierKind, Error> {
+    pub fn kind(&self) -> Result<CaseIdentifierKind<'_>, Error> {
         Ok(match self.id_type {
             CaseIdentifierType::Udrp => CaseIdentifierKind::Udrp,
             CaseIdentifierType::Urs => CaseIdentifierKind::Urs,
