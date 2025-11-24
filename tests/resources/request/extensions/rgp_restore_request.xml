@@ -9,7 +9,7 @@
         </update>
         <extension>
             <update xmlns="urn:ietf:params:xml:ns:rgp-1.0">
-                <restore op="request"></restore>
+                <restore op="request" />
             </update>
         </extension>
         <clTRID>cltrid:1626454866</clTRID>
