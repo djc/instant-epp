@@ -17,7 +17,7 @@ __rustls = []
 async-trait = "0.1.52"
 celes = "2.1"
 chrono = { version = "0.4.23", features = ["serde"] }
-instant-xml = { version = "0.5", features = ["chrono"] }
+instant-xml = { version = "0.6", features = ["chrono"] }
 rustls-platform-verifier = { version = "0.6", optional = true }
 serde = { version = "1.0", features = ["derive"] }
 tokio = { version = "1.0", features = ["io-util", "net", "time"] }
