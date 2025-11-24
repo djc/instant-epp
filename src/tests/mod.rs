@@ -38,6 +38,7 @@ pub(crate) fn get_xml(path: &str) -> Result<String, Box<dyn Error>> {
     Ok(buf)
 }
 
+#[track_caller]
 pub(crate) fn assert_serialized<'c, 'e, Cmd, Ext>(
     path: &str,
     req: impl Into<RequestData<'c, 'e, Cmd, Ext>>,
@@ -51,6 +52,7 @@ pub(crate) fn assert_serialized<'c, 'e, Cmd, Ext>(
     assert_eq!(expected, xml::serialize(document).unwrap());
 }
 
+#[track_caller]
 pub(crate) fn response_from_file<'c, Cmd>(
     path: &str,
 ) -> Response<Cmd::Response, <NoExtension as Extension>::Response>
@@ -60,6 +62,7 @@ where
     response_from_file_with_ext::<Cmd, NoExtension>(path)
 }
 
+#[track_caller]
 pub(crate) fn response_from_file_with_ext<Cmd, Ext>(
     path: &str,
 ) -> Response<Cmd::Response, Ext::Response>
