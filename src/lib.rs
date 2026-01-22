@@ -53,6 +53,7 @@ pub mod xml;
 pub mod extensions {
     pub mod change_poll;
     pub mod consolidate;
+    pub mod fee;
     pub mod frnic;
     pub mod low_balance;
     pub mod namestore;
