@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<epp xmlns="urn:ietf:params:xml:ns:epp-1.0">
+    <command>
+        <check>
+            <check xmlns="urn:ietf:params:xml:ns:domain-1.0">
+                <name>example.com</name>
+                <name>example.net</name>
+                <name>example.xyz</name>
+            </check>
+        </check>
+        <extension>
+            <check xmlns="urn:ietf:params:xml:ns:epp:fee-1.0">
+                <currency>USD</currency>
+                <command name="create">
+                    <period unit="y">2</period>
+                </command>
+                <command name="renew" />
+                <command name="transfer" />
+                <command name="restore" />
+            </check>
+        </extension>
+        <clTRID>cltrid:1626454866</clTRID>
+    </command>
+</epp>
