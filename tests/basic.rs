@@ -132,7 +132,7 @@ async fn client() {
     assert_eq!(rsp.result.code, ResultCode::CommandCompletedSuccessfully);
 
     let result = rsp.res_data().unwrap();
-    assert_eq!(result.list[0].inner.id, "eppdev.com");
+    assert_eq!(result.list[0].name.id, "eppdev.com");
 }
 
 #[tokio::test]
