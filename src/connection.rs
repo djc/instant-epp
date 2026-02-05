@@ -106,8 +106,8 @@ impl<C: Connector> EppConnection<C> {
         cx: &mut Context<'_>,
     ) -> Result<Transition, Error> {
         match &mut state {
-            RequestState::Writing { mut start, buf } => {
-                let wrote = match Pin::new(&mut self.stream).poll_write(cx, &buf[start..]) {
+            RequestState::Writing { start, buf } => {
+                let wrote = match Pin::new(&mut self.stream).poll_write(cx, &buf[*start..]) {
                     Poll::Ready(Ok(wrote)) => wrote,
                     Poll::Ready(Err(err)) => return Err(err.into()),
                     Poll::Pending => return Ok(Transition::Pending(state)),
@@ -121,19 +121,22 @@ impl<C: Connector> EppConnection<C> {
                     .into());
                 }
 
-                start += wrote;
+                let new_start = *start + wrote;
                 debug!(
                     "{}: Wrote {} bytes, {} out of {} done",
                     self.registry,
                     wrote,
-                    start,
+                    new_start,
                     buf.len()
                 );
 
                 // Transition to reading the response's frame header once
                 // we've written the entire request
-                if start < buf.len() {
-                    return Ok(Transition::Next(state));
+                if new_start < buf.len() {
+                    return Ok(Transition::Next(RequestState::Writing {
+                        start: new_start,
+                        buf: mem::take(buf),
+                    }));
                 }
 
                 Ok(Transition::Next(RequestState::ReadLength {
@@ -141,8 +144,8 @@ impl<C: Connector> EppConnection<C> {
                     buf: vec![0; 256],
                 }))
             }
-            RequestState::ReadLength { mut read, buf } => {
-                let mut read_buf = ReadBuf::new(&mut buf[read..]);
+            RequestState::ReadLength { read, buf } => {
+                let mut read_buf = ReadBuf::new(&mut buf[*read..]);
                 match Pin::new(&mut self.stream).poll_read(cx, &mut read_buf) {
                     Poll::Ready(Ok(())) => {}
                     Poll::Ready(Err(err)) => return Err(err.into()),
@@ -162,26 +165,29 @@ impl<C: Connector> EppConnection<C> {
                 // The frame header is a 32-bit (4-byte) big-endian unsigned integer. If we don't
                 // have 4 bytes yet, stay in the `ReadLength` state, otherwise we transition to `Reading`.
 
-                read += filled.len();
-                if read < 4 {
-                    return Ok(Transition::Next(state));
+                let new_read = *read + filled.len();
+                if new_read < 4 {
+                    return Ok(Transition::Next(RequestState::ReadLength {
+                        read: new_read,
+                        buf: mem::take(buf),
+                    }));
                 }
 
                 let expected = u32::from_be_bytes(filled[..4].try_into()?) as usize;
                 debug!("{}: Expected response length: {}", self.registry, expected);
                 buf.resize(expected, 0);
                 Ok(Transition::Next(RequestState::Reading {
-                    read,
+                    read: new_read,
                     buf: mem::take(buf),
                     expected,
                 }))
             }
             RequestState::Reading {
-                mut read,
+                read,
                 buf,
                 expected,
             } => {
-                let mut read_buf = ReadBuf::new(&mut buf[read..]);
+                let mut read_buf = ReadBuf::new(&mut buf[*read..]);
                 match Pin::new(&mut self.stream).poll_read(cx, &mut read_buf) {
                     Poll::Ready(Ok(())) => {}
                     Poll::Ready(Err(err)) => return Err(err.into()),
@@ -197,20 +203,24 @@ impl<C: Connector> EppConnection<C> {
                     .into());
                 }
 
-                read += filled.len();
+                let new_read = *read + filled.len();
                 debug!(
                     "{}: Read {} bytes, {} out of {} done",
                     self.registry,
                     filled.len(),
-                    read,
+                    new_read,
                     expected
                 );
 
                 //
 
-                Ok(if read < *expected {
+                Ok(if new_read < *expected {
                     // If we haven't received the entire response yet, stick to the `Reading` state.
-                    Transition::Next(state)
+                    Transition::Next(RequestState::Reading {
+                        read: new_read,
+                        buf: mem::take(buf),
+                        expected: *expected,
+                    })
                 } else if let Some(next) = self.next.take() {
                     // Otherwise, if we were just pushing through this request because it was already
                     // in flight when we started a new one, ignore this response and move to the
