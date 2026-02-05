@@ -50,7 +50,7 @@ pub struct Name {
     pub available: bool,
 
     #[xml(direct)]
-    pub id: String,
+    pub value: String,
 }
 
 #[derive(Debug, FromXml)]
@@ -99,9 +99,9 @@ mod tests {
 
         assert_eq!(object.result.code, ResultCode::CommandCompletedSuccessfully);
         assert_eq!(object.result.message, SUCCESS_MSG);
-        assert_eq!(result.list[0].name.id, "host1.eppdev-1.com");
+        assert_eq!(result.list[0].name.value, "host1.eppdev-1.com");
         assert!(result.list[0].name.available);
-        assert_eq!(result.list[1].name.id, "ns1.testing.com");
+        assert_eq!(result.list[1].name.value, "ns1.testing.com");
         assert!(!result.list[1].name.available);
         assert_eq!(object.tr_ids.client_tr_id.unwrap(), CLTRID);
         assert_eq!(object.tr_ids.server_tr_id, SVTRID);

@@ -47,7 +47,7 @@ pub struct Name {
     #[xml(attribute, rename = "avail")]
     pub available: bool,
     #[xml(direct)]
-    pub id: String,
+    pub value: String,
 }
 
 #[derive(Debug, FromXml)]
@@ -96,9 +96,9 @@ mod tests {
 
         assert_eq!(object.result.code, ResultCode::CommandCompletedSuccessfully);
         assert_eq!(object.result.message, SUCCESS_MSG);
-        assert_eq!(result.list[0].name.id, "eppdev.com");
+        assert_eq!(result.list[0].name.value, "eppdev.com");
         assert!(result.list[0].name.available);
-        assert_eq!(result.list[1].name.id, "eppdev.net");
+        assert_eq!(result.list[1].name.value, "eppdev.net");
         assert!(!result.list[1].name.available);
         assert!(!result.list[2].name.available);
         assert_eq!(result.list[2].reason.as_ref().unwrap().value, "In Use");

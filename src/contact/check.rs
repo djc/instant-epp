@@ -48,7 +48,7 @@ pub struct ContactId {
     #[xml(attribute, rename = "avail")]
     pub available: bool,
     #[xml(direct)]
-    pub id: String,
+    pub value: String,
 }
 
 #[derive(Debug, FromXml)]
@@ -97,9 +97,9 @@ mod tests {
 
         assert_eq!(object.result.code, ResultCode::CommandCompletedSuccessfully);
         assert_eq!(object.result.message, SUCCESS_MSG);
-        assert_eq!(results.list[0].id.id, "eppdev-contact-1");
+        assert_eq!(results.list[0].id.value, "eppdev-contact-1");
         assert!(!results.list[0].id.available);
-        assert_eq!(results.list[1].id.id, "eppdev-contact-2");
+        assert_eq!(results.list[1].id.value, "eppdev-contact-2");
         assert!(results.list[1].id.available);
         assert_eq!(object.tr_ids.client_tr_id.unwrap(), CLTRID);
         assert_eq!(object.tr_ids.server_tr_id, SVTRID);
