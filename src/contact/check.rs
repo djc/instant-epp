@@ -44,11 +44,9 @@ pub struct ContactCheck<'a> {
 
 #[derive(Debug, FromXml)]
 #[xml(rename = "id", ns(XMLNS))]
-pub struct Checked {
+pub struct ContactId {
     #[xml(attribute, rename = "avail")]
     pub available: bool,
-    #[xml(attribute)]
-    pub reason: Option<String>,
     #[xml(direct)]
     pub id: String,
 }
@@ -56,8 +54,19 @@ pub struct Checked {
 #[derive(Debug, FromXml)]
 #[xml(rename = "cd", ns(XMLNS))]
 pub struct CheckedContact {
-    /// Data under the `<cd>` tag
-    pub inner: Checked,
+    /// Data under the `<id>` tag
+    pub id: ContactId,
+    /// Data under the `<reason>` tag
+    pub reason: Option<Reason>,
+}
+
+#[derive(Debug, FromXml)]
+#[xml(rename = "reason", ns(XMLNS))]
+pub struct Reason {
+    #[xml(attribute)]
+    pub lang: Option<String>,
+    #[xml(direct)]
+    pub value: String,
 }
 
 /// Type that represents the `<chkData>` tag for host check response
@@ -88,10 +97,10 @@ mod tests {
 
         assert_eq!(object.result.code, ResultCode::CommandCompletedSuccessfully);
         assert_eq!(object.result.message, SUCCESS_MSG);
-        assert_eq!(results.list[0].inner.id, "eppdev-contact-1");
-        assert!(!results.list[0].inner.available);
-        assert_eq!(results.list[1].inner.id, "eppdev-contact-2");
-        assert!(results.list[1].inner.available);
+        assert_eq!(results.list[0].id.id, "eppdev-contact-1");
+        assert!(!results.list[0].id.available);
+        assert_eq!(results.list[1].id.id, "eppdev-contact-2");
+        assert!(results.list[1].id.available);
         assert_eq!(object.tr_ids.client_tr_id.unwrap(), CLTRID);
         assert_eq!(object.tr_ids.server_tr_id, SVTRID);
     }
