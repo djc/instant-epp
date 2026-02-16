@@ -812,6 +812,24 @@ impl PeriodType {
             value,
         }
     }
+
+    /// Create a PeriodType in months
+    pub fn months(value: u32) -> Self {
+        Self {
+            unit: "m".to_string(),
+            value,
+        }
+    }
+
+    /// Get the unit of the period
+    pub fn unit(&self) -> &str {
+        &self.unit
+    }
+
+    /// Get the value of the period
+    pub fn value(&self) -> u32 {
+        self.value
+    }
 }
 
 impl From<u32> for PeriodType {
