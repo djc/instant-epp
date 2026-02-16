@@ -804,6 +804,16 @@ impl PeriodType {
             value,
         }
     }
+
+    /// Get the unit of the period
+    pub fn unit(&self) -> &str {
+        &self.unit
+    }
+
+    /// Get the value of the period
+    pub fn value(&self) -> u32 {
+        self.value
+    }
 }
 
 impl From<u32> for PeriodType {
