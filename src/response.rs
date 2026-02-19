@@ -3,21 +3,92 @@
 use std::fmt::Debug;
 
 use chrono::{DateTime, Utc};
-use instant_xml::{FromXml, Kind};
+use instant_xml::{Accumulate, AnyAttribute, AnyElement, FromXml, Kind};
 
 use crate::common::EPP_XMLNS;
 
-/// Type corresponding to the `<undef>` tag an EPP response XML
-#[derive(Debug, Eq, FromXml, PartialEq)]
-#[xml(rename = "undef", ns(EPP_XMLNS))]
-pub struct Undef;
-
-/// Type corresponding to the `<value>` tag under `<extValue>` in an EPP response XML
-#[derive(Debug, Eq, FromXml, PartialEq)]
-#[xml(rename = "value", ns(EPP_XMLNS))]
+/// Type corresponding to the `<value>` tag (errValueType) in an EPP response XML.
+///
+/// Contains arbitrary XML children.
+/// Per RFC 5730, `errValueType` is
+///
+/// ```xml
+/// <complexType name="errValueType" mixed="true">
+///   <sequence>
+///     <any namespace="##any" processContents="skip" />
+///   </sequence>
+///   <anyAttribute namespace="##any" processContents="skip" />
+/// </complexType>
+/// ```
+/// This means that the `<value>` element can contain arbitrary nested XML elements
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ResultValue {
-    /// The `<undef>` element
-    pub undef: Undef,
+    /// Attributes on the `<value>` element itself (from `anyAttribute`)
+    pub attributes: Vec<AnyAttribute<'static>>,
+    /// The captured the inner element
+    pub inner: AnyElement<'static>,
+}
+
+impl<'xml> FromXml<'xml> for ResultValue {
+    fn matches(id: instant_xml::Id<'_>, field: Option<instant_xml::Id<'_>>) -> bool {
+        match field {
+            Some(field) => id == field,
+            None => {
+                id == instant_xml::Id {
+                    ns: EPP_XMLNS,
+                    name: "value",
+                }
+            }
+        }
+    }
+
+    fn deserialize<'cx>(
+        into: &mut Self::Accumulator,
+        _field: &'static str,
+        deserializer: &mut instant_xml::Deserializer<'cx, 'xml>,
+    ) -> Result<(), instant_xml::Error> {
+        use instant_xml::de::Node;
+
+        let mut attributes = Vec::new();
+        let mut inner = None;
+        loop {
+            match deserializer.next() {
+                Some(Ok(Node::Attribute(attr))) => {
+                    // Namespace declarations (`xmlns:prefix="uri"`) are consumed by the
+                    // deserializer to resolve prefixes, so only regular attributes arrive
+                    // here. Resolve the prefix to a namespace URI immediately.
+                    let id = deserializer.attribute_id(&attr)?;
+
+                    attributes.push(AnyAttribute {
+                        ns: id.ns.to_owned().into(),
+                        name: id.name.to_owned().into(),
+                        value: attr.value.into_owned().into(),
+                    });
+                }
+                Some(Ok(Node::Open(element))) => {
+                    let mut nested = deserializer.nested(element);
+                    <AnyElement as FromXml>::deserialize(
+                        &mut inner,
+                        "ResultValue::inner",
+                        &mut nested,
+                    )?;
+                }
+                Some(Ok(Node::Close { .. })) => break,
+                Some(Ok(_)) => continue,
+                Some(Err(e)) => return Err(e),
+                None => break,
+            }
+        }
+
+        *into = Some(Self {
+            attributes,
+            inner: Accumulate::<AnyElement>::try_done(inner, "ResultValue::inner")?.into_owned(),
+        });
+        Ok(())
+    }
+
+    type Accumulator = Option<Self>;
+    const KIND: Kind = Kind::Element;
 }
 
 /// Type corresponding to the `<extValue>` tag in an EPP response XML
@@ -31,6 +102,9 @@ pub struct ExtValue {
 }
 
 /// Type corresponding to the `<result>` tag in an EPP response XML
+///
+/// Per RFC 5730, a result can contain zero or more `<value>` and `<extValue>`
+/// elements in any order.
 #[derive(Debug, Eq, FromXml, PartialEq)]
 #[xml(rename = "result", ns(EPP_XMLNS))]
 pub struct EppResult {
@@ -40,8 +114,12 @@ pub struct EppResult {
     /// The result message
     #[xml(rename = "msg")]
     pub message: String,
-    /// Data under the `<extValue>` tag
-    pub ext_value: Option<ExtValue>,
+    /// Data under `<value>` tags
+    #[xml(rename = "value")]
+    pub values: Vec<ResultValue>,
+    /// Data under `<extValue>` tags
+    #[xml(rename = "extValue")]
+    pub ext_values: Vec<ExtValue>,
 }
 
 /// Response codes as enumerated in section 3 of RFC 5730
@@ -320,11 +398,172 @@ mod tests {
 
         assert_eq!(object.result.code, ResultCode::ObjectDoesNotExist);
         assert_eq!(object.result.message, "Object does not exist");
+        assert_eq!(object.result.ext_values.len(), 1);
+        assert_eq!(object.result.ext_values[0].reason, "545 Object not found");
+        assert_eq!(object.tr_ids.client_tr_id.unwrap(), CLTRID);
+        assert_eq!(object.tr_ids.server_tr_id, SVTRID);
+    }
+
+    #[test]
+    fn error_ext() {
+        let xml = get_xml("response/error_ext.xml").unwrap();
+        let object = xml::deserialize::<ResponseStatus>(xml.as_str()).unwrap();
+
+        assert_eq!(object.result.code, ResultCode::ParameterValuePolicyError);
+        assert_eq!(object.result.message, "Parameter value policy error");
+        assert_eq!(object.result.ext_values.len(), 1);
         assert_eq!(
-            object.result.ext_value.unwrap().reason,
-            "545 Object not found"
+            object.result.ext_values[0].reason,
+            "Maximum of 20 domains exceeded."
+        );
+
+        assert_eq!(object.result.ext_values[0].value.inner.name, "name");
+        assert_eq!(
+            object.result.ext_values[0].value.inner.ns,
+            "urn:ietf:params:xml:ns:domain-1.0"
         );
         assert_eq!(object.tr_ids.client_tr_id.unwrap(), CLTRID);
         assert_eq!(object.tr_ids.server_tr_id, SVTRID);
+    }
+
+    #[test]
+    fn error_value_attrs() {
+        let xml = get_xml("response/error_value_attrs.xml").unwrap();
+        let object = xml::deserialize::<ResponseStatus>(xml.as_str()).unwrap();
+
+        assert_eq!(object.result.code, ResultCode::ParameterValuePolicyError);
+
+        let ext_value = &object.result.ext_values[0];
+
+        // anyAttribute on <value>
+        assert_eq!(ext_value.value.attributes.len(), 1);
+        assert_eq!(
+            ext_value.value.attributes[0].ns,
+            "urn:ietf:params:xml:ns:suggestion-1.0"
+        );
+        assert_eq!(ext_value.value.attributes[0].name, "suggestedValue");
+        assert_eq!(ext_value.value.attributes[0].value, "pqr-123");
+
+        // inner element
+        assert_eq!(ext_value.value.inner.name, "name");
+        assert_eq!(
+            ext_value.value.inner.ns,
+            "urn:ietf:params:xml:ns:domain-1.0"
+        );
+        assert_eq!(ext_value.value.inner.text.as_deref(), Some("example.com"));
+
+        // lang attribute on <reason>
+        assert_eq!(ext_value.reason.lang.as_deref(), Some("de"));
+        assert_eq!(ext_value.reason.text, "Domainname ist nicht verfügbar.");
+
+        assert_eq!(object.tr_ids.client_tr_id.unwrap(), CLTRID);
+        assert_eq!(object.tr_ids.server_tr_id, SVTRID);
+    }
+
+    #[test]
+    fn poll_unhandled_namespace() {
+        let xml = get_xml("response/poll_unhandled_namespace.xml").unwrap();
+        let object = xml::deserialize::<super::Response<(), ()>>(xml.as_str()).unwrap();
+
+        assert_eq!(
+            object.result.code,
+            ResultCode::CommandCompletedSuccessfullyAckToDequeue
+        );
+        assert_eq!(
+            object.result.message,
+            "Command completed successfully; ack to dequeue"
+        );
+        assert_eq!(object.result.ext_values.len(), 2);
+
+        // First extValue: domain:infData
+        let ev0 = &object.result.ext_values[0];
+        assert_eq!(ev0.value.inner.name, "infData");
+        assert_eq!(ev0.value.inner.ns, "urn:ietf:params:xml:ns:domain-1.0");
+        assert_eq!(ev0.value.inner.children.len(), 10);
+        // domain:name
+        assert_eq!(ev0.value.inner.children[0].name, "name");
+        assert_eq!(
+            ev0.value.inner.children[0].text.as_deref(),
+            Some("domain.example")
+        );
+        // domain:status has attribute s="ok" and is self-closing
+        let status = &ev0.value.inner.children[2];
+        assert_eq!(status.name, "status");
+        assert_eq!(status.attributes.len(), 1);
+        assert_eq!(status.attributes[0].name, "s");
+        assert_eq!(status.attributes[0].value, "ok");
+        // domain:contact with type attribute
+        let contact = &ev0.value.inner.children[4];
+        assert_eq!(contact.name, "contact");
+        assert_eq!(contact.attributes[0].name, "type");
+        assert_eq!(contact.attributes[0].value, "admin");
+        assert_eq!(contact.text.as_deref(), Some("sh8013"));
+
+        assert_eq!(
+            ev0.reason.text.trim(),
+            "urn:ietf:params:xml:ns:domain-1.0 not in login services"
+        );
+
+        // Second extValue: changePoll:changeData
+        let ev1 = &object.result.ext_values[1];
+        assert_eq!(ev1.value.inner.name, "changeData");
+        assert_eq!(ev1.value.inner.ns, "urn:ietf:params:xml:ns:changePoll-1.0");
+        // state="after" attribute on changeData
+        assert_eq!(ev1.value.inner.attributes.len(), 1);
+        assert_eq!(ev1.value.inner.attributes[0].name, "state");
+        assert_eq!(ev1.value.inner.attributes[0].value, "after");
+        assert_eq!(ev1.value.inner.children.len(), 6);
+        // changePoll:caseId has type="urs" attribute
+        let case_id = &ev1.value.inner.children[4];
+        assert_eq!(case_id.name, "caseId");
+        assert_eq!(case_id.attributes[0].name, "type");
+        assert_eq!(case_id.attributes[0].value, "urs");
+
+        assert_eq!(
+            ev1.reason.text.trim(),
+            "urn:ietf:params:xml:ns:changePoll-1.0 not in login services"
+        );
+
+        // msgQ
+        let mq = object.message_queue.unwrap();
+        assert_eq!(mq.count, 201);
+        assert_eq!(mq.id, "1");
+
+        assert_eq!(object.tr_ids.client_tr_id.unwrap(), "ABC-12345");
+        assert_eq!(object.tr_ids.server_tr_id, "54322-XYZ");
+    }
+
+    #[test]
+    fn domain_info_unhandled_namespace() {
+        let xml = get_xml("response/domain/info_unhandled_namespace.xml").unwrap();
+        let object =
+            xml::deserialize::<super::Response<crate::domain::info::InfoData, ()>>(xml.as_str())
+                .unwrap();
+
+        assert_eq!(object.result.code, ResultCode::CommandCompletedSuccessfully);
+
+        // extValue with rgp:infData not in login services
+        assert_eq!(object.result.ext_values.len(), 1);
+        let ev = &object.result.ext_values[0];
+        assert_eq!(ev.value.inner.name, "infData");
+        assert_eq!(ev.value.inner.ns, "urn:ietf:params:xml:ns:rgp-1.0");
+        assert_eq!(ev.value.inner.children.len(), 1);
+        let rgp_status = &ev.value.inner.children[0];
+        assert_eq!(rgp_status.name, "rgpStatus");
+        assert_eq!(rgp_status.attributes.len(), 1);
+        assert_eq!(rgp_status.attributes[0].name, "s");
+        assert_eq!(rgp_status.attributes[0].value, "redemptionPeriod");
+        assert_eq!(
+            ev.reason.text,
+            "urn:ietf:params:xml:ns:rgp-1.0 not in login services"
+        );
+
+        // resData parsed as domain InfoData
+        let result = object.res_data().unwrap();
+        assert_eq!(result.name, "example.com");
+        assert_eq!(result.roid, "EXAMPLE1-REP");
+
+        assert_eq!(object.tr_ids.client_tr_id.unwrap(), "ABC-12345");
+        assert_eq!(object.tr_ids.server_tr_id, "54322-XYZ");
     }
 }

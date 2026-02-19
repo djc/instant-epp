@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 
+This test is not taken from a real world example. Searches didn't yield any references for 
+XML snippets containing <extValue>s with <anyAttribute>.
+-->
+<epp xmlns="urn:ietf:params:xml:ns:epp-1.0">
+    <response>
+        <result code="2306">
+            <msg>Parameter value policy error</msg>
+            <extValue>
+                <value s:suggestedValue="pqr-123" xmlns:s="urn:ietf:params:xml:ns:suggestion-1.0">
+                    <domain:name xmlns:domain="urn:ietf:params:xml:ns:domain-1.0">example.com</domain:name>
+                </value>
+                <reason lang="de">Domainname ist nicht verfügbar.</reason>
+            </extValue>
+        </result>
+        <trID>
+            <clTRID>cltrid:1626454866</clTRID>
+            <svTRID>RO-6879-1627224678242975</svTRID>
+        </trID>
+    </response>
+</epp>
