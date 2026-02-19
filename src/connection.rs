@@ -10,7 +10,7 @@ use std::{io, mem, str};
 
 use async_trait::async_trait;
 use tokio::io::{AsyncRead, AsyncWrite, AsyncWriteExt, ReadBuf};
-use tracing::{debug, info};
+use tracing::{debug, info, trace};
 
 use crate::error::Error;
 
@@ -205,12 +205,19 @@ impl<C: Connector> EppConnection<C> {
                     read,
                     expected
                 );
+                // str::from_utf8 will only be executed when the trace callsite is enabled.
+                // E.g. a tracing-subscriber listens for trace-level events.
+                trace!("Read: {}", str::from_utf8(filled).unwrap_or(""));
 
                 //
 
                 Ok(if read < *expected {
-                    // If we haven't received the entire response yet, stick to the `Reading` state.
-                    Transition::Next(state)
+                    // If we haven't received the entire response yet, stick to the `Reading` state with updatead values.
+                    Transition::Next(RequestState::Reading {
+                        read,
+                        buf: mem::take(buf),
+                        expected: *expected,
+                    })
                 } else if let Some(next) = self.next.take() {
                     // Otherwise, if we were just pushing through this request because it was already
                     // in flight when we started a new one, ignore this response and move to the
