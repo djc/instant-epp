@@ -21,6 +21,7 @@ for domain registrars. We have implemented support for the following standards:
 - [ConsoliDate mapping](https://www.verisign.com/assets/consolidate-mapping.txt)
 - [Namestore Extension Mapping](https://www.verisign.com/assets/epp-sdk/verisign_epp-extension_namestoreext_v01.html)
 - [Low Balance Mapping](https://www.verisign.com/assets/epp-sdk/verisign_epp-extension_low-balance_v01.html)
+- [RFC 9038](https://www.rfc-editor.org/rfc/rfc9038.html) - Extensible Provisioning Protocol (EPP) Unhandled Namespaces
 
 This library is used in production at [Instant Domain Search](https://instantdomainsearch.com/).
 
