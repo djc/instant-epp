@@ -59,6 +59,21 @@ pub struct CheckedDomain {
     pub reason: Option<Reason>,
 }
 
+impl CheckedDomain {
+    /// Returns a tuple of the availability and reason (if any) for the domain name
+    pub fn available(&self) -> (bool, Option<&str>) {
+        (
+            self.name.available,
+            self.reason.as_ref().map(|r| r.value.as_str()),
+        )
+    }
+
+    /// Returns the domain name value
+    pub fn name(&self) -> &str {
+        &self.name.value
+    }
+}
+
 #[derive(Debug, FromXml)]
 #[xml(rename = "reason", ns(XMLNS))]
 pub struct Reason {
