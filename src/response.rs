@@ -165,7 +165,22 @@ pub struct ExtValue {
     /// Data under the `<value>` tag
     pub value: ResultValue,
     /// Data under the `<reason>` tag
-    pub reason: String,
+    pub reason: Reason,
+}
+
+/// Type corresponding to the `<reason>` tag in an EPP `<extValue>` response XML
+///
+/// Per RFC 5730, the language is identified via an optional "lang" attribute.
+/// If not specified, the default value is "en" (English).
+#[derive(Debug, Eq, FromXml, PartialEq)]
+#[xml(rename = "reason", ns(EPP_XMLNS))]
+pub struct Reason {
+    /// Language of the reason message (defaults to "en" if absent)
+    #[xml(attribute)]
+    pub lang: Option<String>,
+    /// The human-readable reason text
+    #[xml(direct)]
+    pub text: String,
 }
 
 /// Type corresponding to the `<result>` tag in an EPP response XML
@@ -466,7 +481,11 @@ mod tests {
         assert_eq!(object.result.code, ResultCode::ObjectDoesNotExist);
         assert_eq!(object.result.message, "Object does not exist");
         assert_eq!(object.result.ext_values.len(), 1);
-        assert_eq!(object.result.ext_values[0].reason, "545 Object not found");
+        assert_eq!(
+            object.result.ext_values[0].reason.text,
+            "545 Object not found"
+        );
+        assert_eq!(object.result.ext_values[0].reason.lang, None);
         assert_eq!(object.tr_ids.client_tr_id.unwrap(), CLTRID);
         assert_eq!(object.tr_ids.server_tr_id, SVTRID);
     }
@@ -480,9 +499,10 @@ mod tests {
         assert_eq!(object.result.message, "Parameter value policy error");
         assert_eq!(object.result.ext_values.len(), 1);
         assert_eq!(
-            object.result.ext_values[0].reason,
+            object.result.ext_values[0].reason.text,
             "Maximum of 20 domains exceeded."
         );
+        assert_eq!(object.result.ext_values[0].reason.lang, None);
 
         assert_eq!(object.result.ext_values[0].value.inner.name, "name");
         assert_eq!(
