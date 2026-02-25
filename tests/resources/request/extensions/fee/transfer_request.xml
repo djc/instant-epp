@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<epp xmlns="urn:ietf:params:xml:ns:epp-1.0">
+    <command>
+        <transfer op="request">
+            <transfer xmlns="urn:ietf:params:xml:ns:domain-1.0">
+                <name>example.com</name>
+                <period unit="y">1</period>
+                <authInfo>
+                    <pw>2fooBAR</pw>
+                </authInfo>
+            </transfer>
+        </transfer>
+        <extension>
+            <transfer xmlns="urn:ietf:params:xml:ns:epp:fee-1.0">
+                <currency>USD</currency>
+                <fee>5.00</fee>
+            </transfer>
+        </extension>
+        <clTRID>cltrid:1626454866</clTRID>
+    </command>
+</epp>

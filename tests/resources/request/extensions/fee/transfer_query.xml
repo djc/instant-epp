@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<epp xmlns="urn:ietf:params:xml:ns:epp-1.0">
+    <command>
+        <transfer operation="query">
+            <transfer xmlns="urn:ietf:params:xml:ns:domain-1.0">
+                <name>example.com</name>
+                <authInfo>
+                    <pw roid="JD1234-REP">2fooBAR</pw>
+                </authInfo>
+            </transfer>
+        </transfer>
+        <extension></extension>
+        <clTRID>cltrid:1626454866</clTRID>
+    </command>
+</epp>
