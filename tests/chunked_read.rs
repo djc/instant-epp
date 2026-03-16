@@ -1,7 +1,6 @@
 use std::time::Duration;
 
 use async_trait::async_trait;
-use rstest::rstest;
 use tokio_test::io::Builder;
 
 use instant_epp::client::{Connector, EppClient};
@@ -26,11 +25,7 @@ fn greeting() -> &'static [u8] {
 </epp>"#
 }
 
-#[rstest]
-#[case::single_chunk(1)]
-#[case::two_chunks(2)]
-#[tokio::test]
-async fn test_chunked_greeting(#[case] num_chunks: usize) {
+async fn connect_with_chunks(num_chunks: usize) -> Result<EppClient<impl Connector>, Error> {
     struct FakeConnector {
         num_chunks: usize,
     }
@@ -60,12 +55,20 @@ async fn test_chunked_greeting(#[case] num_chunks: usize) {
         }
     }
 
-    let connector = FakeConnector { num_chunks };
-    let result = EppClient::new(connector, "test".into(), Duration::from_secs(5)).await;
+    EppClient::new(
+        FakeConnector { num_chunks },
+        "test".into(),
+        Duration::from_secs(5),
+    )
+    .await
+}
 
-    assert!(
-        result.is_ok(),
-        "Failed to read greeting in {} chunk(s)",
-        num_chunks
-    );
+#[tokio::test]
+async fn greeting_single_chunk() {
+    assert!(connect_with_chunks(1).await.is_ok());
+}
+
+#[tokio::test]
+async fn greeting_two_chunks() {
+    assert!(connect_with_chunks(2).await.is_ok());
 }
