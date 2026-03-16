@@ -121,20 +121,20 @@ impl<C: Connector> EppConnection<C> {
                     .into());
                 }
 
-                let new_start = *start + wrote;
+                let start = *start + wrote;
                 debug!(
                     "{}: Wrote {} bytes, {} out of {} done",
                     self.registry,
                     wrote,
-                    new_start,
+                    start,
                     buf.len()
                 );
 
                 // Transition to reading the response's frame header once
                 // we've written the entire request
-                if new_start < buf.len() {
+                if start < buf.len() {
                     return Ok(Transition::Next(RequestState::Writing {
-                        start: new_start,
+                        start,
                         buf: mem::take(buf),
                     }));
                 }
