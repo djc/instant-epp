@@ -1,6 +1,5 @@
 //! XSD Duration format
 
-use std::ops::Div;
 use std::str::FromStr;
 
 use instant_xml::{FromXml, ToXml};
@@ -68,7 +67,7 @@ impl FromStr for XsdDuration {
                 _ => s,
             };
 
-            (s, 12 * (y as i64) + (m as i64) * sgn)
+            (s, (12 * (y as i64) + (m as i64)) * sgn)
         };
 
         // duDayTimeFrag
@@ -85,7 +84,7 @@ impl FromStr for XsdDuration {
             if !s.starts_with("T") {
                 return Ok(Self {
                     months,
-                    seconds: (86400 * d) as f64,
+                    seconds: (86400 * d) as f64 * sgn as f64,
                 });
             }
             let s = &s[1..];
@@ -117,7 +116,10 @@ impl FromStr for XsdDuration {
             (86400 * d) as f64 + t
         };
 
-        Ok(Self { months, seconds })
+        Ok(Self {
+            months,
+            seconds: seconds * sgn as f64,
+        })
     }
 }
 
@@ -210,8 +212,9 @@ fn format_duration_inner(duration: &XsdDuration) -> String {
         String::from("P")
     };
     // https://www.w3.org/TR/xmlschema11-2/#f-duYMCan
-    let years = (duration.months / 12) as u64;
-    let months = (duration.months % 12) as u64;
+    let abs_months = duration.months.unsigned_abs();
+    let years = abs_months / 12;
+    let months = abs_months % 12;
 
     if years > 0 {
         buf.push_str(&format!("{}Y", years));
@@ -224,34 +227,33 @@ fn format_duration_inner(duration: &XsdDuration) -> String {
         return buf;
     }
 
-    let days = (duration.seconds.div_euclid(86400.0)) as u64;
-    let hours = ((duration.seconds % 86400.0).div_euclid(3600.0)) as u64;
-    let minutes = ((duration.seconds % 3600.0).div(60.0)) as u64;
-    let seconds = duration.seconds % 60.0;
+    let abs_seconds = duration.seconds.abs();
+    let days = (abs_seconds.div_euclid(86400.0)) as u64;
+    let hours = ((abs_seconds % 86400.0).div_euclid(3600.0)) as u64;
+    let minutes = ((abs_seconds % 3600.0) / 60.0) as u64;
+    let seconds = abs_seconds % 60.0;
 
-    if duration.seconds != 0.0 {
-        if days > 0 {
-            buf.push_str(&format!("{}D", days));
-        }
+    if days > 0 {
+        buf.push_str(&format!("{}D", days));
+    }
 
-        if hours == 0 && minutes == 0 && seconds == 0.0 {
-            return buf;
-        }
+    if hours == 0 && minutes == 0 && seconds == 0.0 {
+        return buf;
+    }
 
-        buf.push('T');
+    buf.push('T');
 
-        if hours > 0 {
-            buf.push_str(&format!("{}H", hours));
-        }
-        if minutes > 0 {
-            buf.push_str(&format!("{}M", minutes));
-        }
-        if seconds > 0.0 {
-            if seconds.fract() > 0.0 {
-                buf.push_str(&format!("{:.4}S", seconds));
-            } else {
-                buf.push_str(&format!("{}S", seconds.trunc() as u64));
-            }
+    if hours > 0 {
+        buf.push_str(&format!("{}H", hours));
+    }
+    if minutes > 0 {
+        buf.push_str(&format!("{}M", minutes));
+    }
+    if seconds > 0.0 {
+        if seconds.fract() > 0.0 {
+            buf.push_str(&format!("{:.4}S", seconds));
+        } else {
+            buf.push_str(&format!("{}S", seconds.trunc() as u64));
         }
     }
 
@@ -305,14 +307,46 @@ mod tests {
         let dur: XsdDuration = s.parse().unwrap();
         assert_eq!(
             dur,
-            XsdDuration::new(12 * 30, (30 * DAY + DAY + 3600 + 60 + 1) as f64).unwrap()
+            XsdDuration::new(13, (DAY + 3600 + 60 + 1) as f64).unwrap()
         );
 
         let s = "P1Y1M5DT0H0M0S";
         let dur: XsdDuration = s.parse().unwrap();
         assert_eq!(
             dur,
-            XsdDuration::new(12 * 30, (30 * DAY + 5 * DAY) as f64).unwrap()
+            XsdDuration::new(13, (5 * DAY) as f64).unwrap()
         );
+    }
+
+    #[test]
+    fn deser_negative() {
+        let s = "-P1Y2M";
+        let dur: XsdDuration = s.parse().unwrap();
+        assert_eq!(dur, XsdDuration::new(-14, 0.0).unwrap());
+
+        let s = "-P1DT1H";
+        let dur: XsdDuration = s.parse().unwrap();
+        assert_eq!(
+            dur,
+            XsdDuration::new(0, -((DAY + 3600) as f64)).unwrap()
+        );
+
+        let s = "-P1Y2M3DT4H5M6S";
+        let dur: XsdDuration = s.parse().unwrap();
+        assert_eq!(
+            dur,
+            XsdDuration::new(-14, -((3 * DAY + 4 * 3600 + 5 * 60 + 6) as f64)).unwrap()
+        );
+    }
+
+    #[test]
+    fn ser_negative() {
+        let dur = XsdDuration::new(-14, 0.0).unwrap();
+        let s = format_duration(dur).unwrap();
+        assert_eq!(s, "-P1Y2M");
+
+        let dur = XsdDuration::new(0, -((DAY + 3600) as f64)).unwrap();
+        let s = format_duration(dur).unwrap();
+        assert_eq!(s, "-P1DT1H");
     }
 }
