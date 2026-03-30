@@ -3,10 +3,13 @@
 //! As described in [Registry Fee Extension for the Extensible Provisioning Protocol](https://datatracker.ietf.org/doc/rfc8748/)
 
 use std::borrow::Cow;
+use std::fmt;
 use std::ops::Deref;
+use std::str::FromStr;
 
 use instant_xml::Id;
 use instant_xml::{FromXml, ToXml};
+use rust_decimal::Decimal;
 
 use crate::domain::{
     check::DomainCheck, transfer::DomainTransfer, DomainCreate, DomainDelete, DomainRenew,
@@ -680,6 +683,81 @@ pub struct CommandDataType {
     pub reason: Option<ReasonType>,
 }
 
+/// Wrapper around [`rust_decimal::Decimal`] for monetary amounts in EPP fee
+/// extension XML.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Amount(pub Decimal);
+
+impl Amount {
+    pub fn new(value: Decimal) -> Self {
+        Self(value)
+    }
+}
+
+impl From<Decimal> for Amount {
+    fn from(value: Decimal) -> Self {
+        Self(value)
+    }
+}
+
+impl Deref for Amount {
+    type Target = Decimal;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl fmt::Display for Amount {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.0.fmt(f)
+    }
+}
+
+impl<'xml> FromXml<'xml> for Amount {
+    fn matches(id: Id<'_>, field: Option<Id<'_>>) -> bool {
+        match field {
+            Some(field) => id == field,
+            None => false,
+        }
+    }
+
+    fn deserialize<'cx>(
+        into: &mut Self::Accumulator,
+        field: &'static str,
+        deserializer: &mut instant_xml::Deserializer<'cx, 'xml>,
+    ) -> Result<(), instant_xml::Error> {
+        if into.is_some() {
+            return Err(instant_xml::Error::DuplicateValue(field));
+        }
+
+        if let Some(value) = deserializer.take_str()? {
+            let decimal = Decimal::from_str(value.as_ref()).map_err(|_| {
+                instant_xml::Error::UnexpectedValue(format!(
+                    "unable to parse decimal from `{value}` for {field}"
+                ))
+            })?;
+            *into = Some(Amount(decimal));
+        }
+
+        Ok(())
+    }
+
+    type Accumulator = Option<Self>;
+    const KIND: instant_xml::Kind = instant_xml::Kind::Scalar;
+}
+
+impl ToXml for Amount {
+    fn serialize<W: std::fmt::Write + ?Sized>(
+        &self,
+        _field: Option<Id<'_>>,
+        serializer: &mut instant_xml::Serializer<W>,
+    ) -> Result<(), instant_xml::Error> {
+        serializer.write_str(&self.0.round_dp(2).to_string())?;
+        Ok(())
+    }
+}
+
 /// Type for EPP XML `<fee:balance>` tag
 ///
 /// Used in <create>, <update>, <renew>, <transfer> and <delete> responses
@@ -687,7 +765,7 @@ pub struct CommandDataType {
 #[xml(rename = "balance", ns(XMLNS))]
 pub struct Balance {
     #[xml(direct)]
-    pub amount: f64,
+    pub amount: Amount,
 }
 
 /// Type for EPP XML `<fee:creditLimit>` tag
@@ -697,7 +775,7 @@ pub struct Balance {
 #[xml(rename = "creditLimit", ns(XMLNS))]
 pub struct CreditLimit {
     #[xml(direct)]
-    pub amount: f64,
+    pub amount: Amount,
 }
 
 /// Type for EPP XML `<fee:credit>` tag implements fee:creditType
@@ -707,11 +785,11 @@ pub struct Credit {
     #[xml(attribute)]
     pub description: Option<String>,
     #[xml(direct)]
-    pub amount: f64,
+    pub amount: Amount,
 }
 
 /// Type for EPP XML `<fee:fee>` tag implementing type fee:feeType
-#[derive(Debug, Clone, PartialEq, FromXml)]
+#[derive(Debug, Clone, PartialEq, FromXml, ToXml)]
 #[xml(rename = "fee", ns(XMLNS))]
 pub struct FeeType {
     #[xml(attribute)]
@@ -723,47 +801,7 @@ pub struct FeeType {
     #[xml(attribute)]
     pub applied: Option<Applied>,
     #[xml(direct)]
-    pub amount: f64,
-}
-
-// We need a custom ToXml to emit the decimal amount correctly
-// There seems to be an incompatibility with `serialize_with` and `direct`
-// We need direct for the FromXml derive to work correctly, but you cannot
-// combine this with `serialize_with`.
-impl ToXml for FeeType {
-    fn serialize<W: ::core::fmt::Write + ?::core::marker::Sized>(
-        &self,
-        _field: Option<instant_xml::Id<'_>>,
-        serializer: &mut instant_xml::Serializer<W>,
-    ) -> Result<(), instant_xml::Error> {
-        let prefix = serializer.write_start("fee", XMLNS)?;
-        let new = instant_xml::ser::Context::<0usize> {
-            default_ns: XMLNS,
-            ..Default::default()
-        };
-
-        let old = serializer.push(new)?;
-        if self.description.present() {
-            serializer.write_attr("description", XMLNS, &self.description)?;
-        }
-        if self.refundable.present() {
-            serializer.write_attr("refundable", XMLNS, &self.refundable)?;
-        }
-        if self.grace_period.present() {
-            serializer.write_attr("grace-period", XMLNS, &self.grace_period)?;
-        }
-        if self.applied.present() {
-            serializer.write_attr("applied", XMLNS, &self.applied)?;
-        }
-        serializer.end_start()?;
-        // decimal type requires at least one digit after the decimal point, we use two, as this is a currency.
-        // Todo, this should use a proper decimal type.
-        let amount_str = format!("{:.2}", self.amount);
-        serializer.write_str(&amount_str)?;
-        serializer.write_close(prefix, "fee")?;
-        serializer.pop(old);
-        Ok(())
-    }
+    pub amount: Amount,
 }
 
 /// Scalar enum for fee:applied
@@ -881,6 +919,8 @@ mod tests {
     use crate::domain::transfer::DomainTransfer;
     use crate::domain::update::DomainChangeInfo;
     use crate::domain::{DomainContact, HostInfo, HostObj, Period, PeriodLength};
+    use rust_decimal_macros::dec;
+
     use crate::tests::{assert_serialized, response_from_file_with_ext};
 
     use super::*;
@@ -943,7 +983,7 @@ mod tests {
                     refundable: None,
                     grace_period: None,
                     applied: None,
-                    amount: 5.00,
+                    amount: Amount(dec!(5.00)),
                 })
                 .with_currency(Currency::Usd),
             ),
@@ -978,7 +1018,7 @@ mod tests {
                             refundable: None,
                             grace_period: None,
                             applied: None,
-                            amount: 5.00,
+                            amount: Amount(dec!(5.00)),
                         }],
                         credits: vec![],
                     },
@@ -1007,7 +1047,7 @@ mod tests {
                             refundable: None,
                             grace_period: None,
                             applied: None,
-                            amount: 5.00,
+                            amount: Amount(dec!(5.00)),
                         }],
                         credits: vec![],
                     },
@@ -1038,7 +1078,7 @@ mod tests {
                             refundable: None,
                             grace_period: None,
                             applied: None,
-                            amount: 5.00,
+                            amount: Amount(dec!(5.00)),
                         }],
                         credits: vec![],
                     },
@@ -1085,7 +1125,7 @@ mod tests {
                 applied: None,
                 refundable: Some(true),
                 description: Some("Registration Fee".to_string()),
-                amount: 10.00
+                amount: Amount(dec!(10.00))
             },]
         );
         let command = cd.1.get(&CommandEnum::Renew).unwrap();
@@ -1100,7 +1140,7 @@ mod tests {
                 applied: None,
                 refundable: Some(true),
                 description: Some("Renewal Fee".to_string()),
-                amount: 10.00
+                amount: Amount(dec!(10.00))
             },]
         );
 
@@ -1126,13 +1166,16 @@ mod tests {
         );
         let ext = object.extension().unwrap();
         assert_eq!(ext.currency, Some(Currency::Usd));
-        assert_eq!(ext.fees[0].amount, 5.00);
+        assert_eq!(ext.fees[0].amount, Amount(dec!(5.00)));
         assert_eq!(
             ext.fees[0].grace_period,
             Some(XsdDuration::new(0, (5 * 24 * 60 * 60) as f64).unwrap()) // 5 days
         );
-        assert_eq!(ext.balance.as_ref().unwrap().amount, -5.00);
-        assert_eq!(ext.credit_limit.as_ref().unwrap().amount, 1000.00);
+        assert_eq!(ext.balance.as_ref().unwrap().amount, Amount(dec!(-5.00)));
+        assert_eq!(
+            ext.credit_limit.as_ref().unwrap().amount,
+            Amount(dec!(1000.00))
+        );
     }
 
     #[test]
@@ -1141,8 +1184,11 @@ mod tests {
             response_from_file_with_ext::<DomainRenew, Renew>("response/extensions/fee/renew.xml");
         let ext = object.extension().unwrap();
         assert_eq!(ext.inner.currency, Some(Currency::Usd));
-        assert_eq!(ext.inner.fees[0].amount, 5.00);
-        assert_eq!(ext.inner.balance.as_ref().unwrap().amount, 1000.00);
+        assert_eq!(ext.inner.fees[0].amount, Amount(dec!(5.00)));
+        assert_eq!(
+            ext.inner.balance.as_ref().unwrap().amount,
+            Amount(dec!(1000.00))
+        );
     }
 
     #[test]
@@ -1153,12 +1199,15 @@ mod tests {
 
         let ext = object.extension().unwrap();
         assert_eq!(ext.inner.currency, Some(Currency::Usd));
-        assert_eq!(ext.inner.credit[0].amount, -5.00);
+        assert_eq!(ext.inner.credit[0].amount, Amount(dec!(-5.00)));
         assert_eq!(
             ext.inner.credit[0].description.as_ref().unwrap(),
             "AGP Credit"
         );
-        assert_eq!(ext.inner.balance.as_ref().unwrap().amount, 1005.00);
+        assert_eq!(
+            ext.inner.balance.as_ref().unwrap().amount,
+            Amount(dec!(1005.00))
+        );
     }
 
     #[test]
@@ -1169,7 +1218,7 @@ mod tests {
         let ext = object.extension().unwrap();
         assert_eq!(ext.currency, Some(Currency::Usd));
         assert_eq!(ext.period.as_ref().unwrap().value, 1);
-        assert_eq!(ext.fees[0].amount, 5.00);
+        assert_eq!(ext.fees[0].amount, Amount(dec!(5.00)));
     }
 
     #[test]
@@ -1181,7 +1230,7 @@ mod tests {
         let ext = object.extension().unwrap();
         assert_eq!(ext.currency, Some(Currency::Usd));
         assert!(ext.period.is_none());
-        assert_eq!(ext.fees[0].amount, 5.00);
+        assert_eq!(ext.fees[0].amount, Amount(dec!(5.00)));
         assert_eq!(
             ext.fees[0].grace_period,
             Some(XsdDuration::new(0, (5 * 24 * 60 * 60) as f64).unwrap()) //5 days
@@ -1195,6 +1244,6 @@ mod tests {
         );
         let ext = object.extension().unwrap();
         assert_eq!(ext.currency, Some(Currency::Usd));
-        assert_eq!(ext.fees[0].amount, 5.00);
+        assert_eq!(ext.fees[0].amount, Amount(dec!(5.00)));
     }
 }
