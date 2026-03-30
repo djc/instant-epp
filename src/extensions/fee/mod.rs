@@ -56,7 +56,7 @@ impl<'a> Check<'a> {
     /// use instant_epp::extensions::fee::{Check, Command, Currency};
     /// let fee_check = Check::new()
     ///   .push(Command::create())
-    ///  .push(Command::renew()).with_currency(Currency::Usd);
+    ///  .push(Command::renew()).with_currency(Currency::USD);
     /// ```
     pub fn new() -> Self {
         Self::default()
@@ -591,7 +591,6 @@ impl<'xml> FromXml<'xml> for TransformResultType {
                 "Transform::currency",
                 deserializer,
             )?;
-            deserializer.ignore()?;
         } else if <Option<PeriodType> as FromXml<'xml>>::matches(current, None) {
             <Option<PeriodType> as FromXml>::deserialize(
                 &mut into.period,
@@ -823,13 +822,35 @@ pub enum CommandEnum {
     Restore,
 }
 
-/// Scalar enum for fee:currency
-#[derive(Debug, Clone, Copy, PartialEq, FromXml, ToXml)]
-#[xml(scalar, rename = "currency", rename_all = "UPPERCASE", ns(XMLNS))]
-pub enum Currency {
-    Usd,
-    Eur,
-    Gbp,
+/// Newtype for EPP XML `<fee:currency>` tag
+///
+/// Wraps a currency code string (e.g. "USD", "EUR"). Common currencies are
+/// provided as associated constants.
+#[derive(Debug, Clone, PartialEq, Eq, FromXml, ToXml)]
+#[xml(rename = "currency", ns(XMLNS))]
+pub struct Currency {
+    #[xml(direct)]
+    code: Cow<'static, str>,
+}
+
+impl Currency {
+    pub const USD: Self = Self {
+        code: Cow::Borrowed("USD"),
+    };
+    pub const EUR: Self = Self {
+        code: Cow::Borrowed("EUR"),
+    };
+    pub const GBP: Self = Self {
+        code: Cow::Borrowed("GBP"),
+    };
+
+    pub fn new(code: impl Into<Cow<'static, str>>) -> Self {
+        Self { code: code.into() }
+    }
+
+    pub fn as_str(&self) -> &str {
+        &self.code
+    }
 }
 
 /// Type for EPP XML `<fee:period>` tag
@@ -934,7 +955,7 @@ mod tests {
                     domains: &["example.com", "example.net", "example.xyz"],
                 },
                 &Check::new()
-                    .with_currency(Currency::Usd)
+                    .with_currency(Currency::USD)
                     .push(Command::create().with_period(2))
                     .push(Command::renew())
                     .push(Command::transfer())
@@ -985,7 +1006,7 @@ mod tests {
                     applied: None,
                     amount: Amount(dec!(5.00)),
                 })
-                .with_currency(Currency::Usd),
+                .with_currency(Currency::USD),
             ),
         );
     }
@@ -1012,7 +1033,7 @@ mod tests {
                 &renew,
                 &Renew {
                     inner: TransformType {
-                        currency: Some(Currency::Usd),
+                        currency: Some(Currency::USD),
                         fees: vec![FeeType {
                             description: None,
                             refundable: None,
@@ -1041,7 +1062,7 @@ mod tests {
                 &transfer,
                 &Transfer::Request(TransferRequest {
                     inner: TransformType {
-                        currency: Some(Currency::Usd),
+                        currency: Some(Currency::USD),
                         fees: vec![FeeType {
                             description: None,
                             refundable: None,
@@ -1072,7 +1093,7 @@ mod tests {
                 &update,
                 &Update {
                     inner: TransformType {
-                        currency: Some(Currency::Usd),
+                        currency: Some(Currency::USD),
                         fees: vec![FeeType {
                             description: None,
                             refundable: None,
@@ -1093,7 +1114,7 @@ mod tests {
             response_from_file_with_ext::<DomainCheck, Check>("response/extensions/fee/check.xml");
         let ext = object.extension.unwrap().data;
 
-        assert_eq!(ext.currency, Currency::Usd);
+        assert_eq!(ext.currency, Currency::USD);
 
         let results = ext
             .data
@@ -1165,7 +1186,7 @@ mod tests {
             "response/extensions/fee/create.xml",
         );
         let ext = object.extension().unwrap();
-        assert_eq!(ext.currency, Some(Currency::Usd));
+        assert_eq!(ext.currency, Some(Currency::USD));
         assert_eq!(ext.fees[0].amount, Amount(dec!(5.00)));
         assert_eq!(
             ext.fees[0].grace_period,
@@ -1183,7 +1204,7 @@ mod tests {
         let object =
             response_from_file_with_ext::<DomainRenew, Renew>("response/extensions/fee/renew.xml");
         let ext = object.extension().unwrap();
-        assert_eq!(ext.inner.currency, Some(Currency::Usd));
+        assert_eq!(ext.inner.currency, Some(Currency::USD));
         assert_eq!(ext.inner.fees[0].amount, Amount(dec!(5.00)));
         assert_eq!(
             ext.inner.balance.as_ref().unwrap().amount,
@@ -1198,7 +1219,7 @@ mod tests {
         );
 
         let ext = object.extension().unwrap();
-        assert_eq!(ext.inner.currency, Some(Currency::Usd));
+        assert_eq!(ext.inner.currency, Some(Currency::USD));
         assert_eq!(ext.inner.credit[0].amount, Amount(dec!(-5.00)));
         assert_eq!(
             ext.inner.credit[0].description.as_ref().unwrap(),
@@ -1216,7 +1237,7 @@ mod tests {
             "response/extensions/fee/transfer_query.xml",
         );
         let ext = object.extension().unwrap();
-        assert_eq!(ext.currency, Some(Currency::Usd));
+        assert_eq!(ext.currency, Some(Currency::USD));
         assert_eq!(ext.period.as_ref().unwrap().value, 1);
         assert_eq!(ext.fees[0].amount, Amount(dec!(5.00)));
     }
@@ -1228,7 +1249,7 @@ mod tests {
             "response/extensions/fee/transfer_request.xml",
         );
         let ext = object.extension().unwrap();
-        assert_eq!(ext.currency, Some(Currency::Usd));
+        assert_eq!(ext.currency, Some(Currency::USD));
         assert!(ext.period.is_none());
         assert_eq!(ext.fees[0].amount, Amount(dec!(5.00)));
         assert_eq!(
@@ -1243,7 +1264,7 @@ mod tests {
             "response/extensions/fee/update.xml",
         );
         let ext = object.extension().unwrap();
-        assert_eq!(ext.currency, Some(Currency::Usd));
+        assert_eq!(ext.currency, Some(Currency::USD));
         assert_eq!(ext.fees[0].amount, Amount(dec!(5.00)));
     }
 }
