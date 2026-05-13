@@ -1,10 +1,13 @@
 //! DNS security extensions mapping
 //!
 //! As described in [RFC 5910](https://www.rfc-editor.org/rfc/rfc5910)
-use instant_xml::{Error, Id, Serializer, ToXml};
+
 use std::borrow::Cow;
 use std::fmt::Write;
 use std::time::Duration;
+
+use instant_xml::ser::Context;
+use instant_xml::{Error, Id, Serializer, ToXml};
 
 use crate::common::NoExtension;
 use crate::request::{Extension, Transaction};
@@ -81,14 +84,14 @@ impl ToXml for DsOrKeyType<'_> {
         serializer: &mut Serializer<'_, W>,
     ) -> Result<(), Error> {
         if let Some(maximum_signature_lifetime) = self.maximum_signature_lifetime {
-            let nc_name = "maxSigLife";
-            let prefix = serializer.write_start(nc_name, XMLNS)?;
+            let max_sig_life = serializer.write_start("maxSigLife", XMLNS, None::<Context<0>>)?;
             serializer.end_start()?;
             maximum_signature_lifetime
                 .as_secs()
                 .serialize(None, serializer)?;
-            serializer.write_close(prefix, nc_name)?;
+            serializer.write_close(max_sig_life)?;
         }
+
         match &self.data {
             DsOrKeyData::DsData(data) => data.serialize(None, serializer)?,
             DsOrKeyData::KeyData(data) => data.serialize(None, serializer)?,

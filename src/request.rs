@@ -2,6 +2,7 @@
 
 use std::fmt::Debug;
 
+use instant_xml::ser::Context;
 use instant_xml::{FromXmlOwned, ToXml};
 
 use crate::common::EPP_XMLNS;
@@ -50,19 +51,19 @@ impl<D: ToXml, E: ToXml> ToXml for CommandWrapper<'_, D, E> {
         _: Option<instant_xml::Id<'_>>,
         serializer: &mut instant_xml::Serializer<W>,
     ) -> Result<(), instant_xml::Error> {
-        let prefix = serializer.write_start("command", EPP_XMLNS)?;
+        let command = serializer.write_start("command", EPP_XMLNS, None::<Context<0>>)?;
         serializer.end_start()?;
         self.data.serialize(None, serializer)?;
         if let Some(extension) = self.extension {
             Ext { inner: extension }.serialize(None, serializer)?;
         }
 
-        let id_prefix = serializer.write_start("clTRID", EPP_XMLNS)?;
+        let cl_tr_id = serializer.write_start("clTRID", EPP_XMLNS, None::<Context<0>>)?;
         serializer.end_start()?;
         serializer.write_str(&self.client_tr_id)?;
-        serializer.write_close(id_prefix, "clTRID")?;
+        serializer.write_close(cl_tr_id)?;
 
-        serializer.write_close(prefix, "command")?;
+        serializer.write_close(command)?;
         Ok(())
     }
 }

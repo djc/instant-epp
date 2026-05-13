@@ -1,3 +1,4 @@
+use instant_xml::ser::Context;
 use instant_xml::{FromXml, ToXml};
 
 use crate::common::{NoExtension, EPP_XMLNS};
@@ -34,7 +35,7 @@ impl ToXml for Poll {
         _: Option<instant_xml::Id<'_>>,
         serializer: &mut instant_xml::Serializer<W>,
     ) -> Result<(), instant_xml::Error> {
-        serializer.write_start("poll", EPP_XMLNS)?;
+        serializer.write_start("poll", EPP_XMLNS, None::<Context<0>>)?;
         serializer.write_attr("op", EPP_XMLNS, &"req")?;
         serializer.end_empty()
     }
@@ -53,7 +54,7 @@ impl ToXml for Ack<'_> {
         _: Option<instant_xml::Id<'_>>,
         serializer: &mut instant_xml::Serializer<W>,
     ) -> Result<(), instant_xml::Error> {
-        serializer.write_start("poll", EPP_XMLNS)?;
+        serializer.write_start("poll", EPP_XMLNS, None::<Context<0>>)?;
         serializer.write_attr("op", EPP_XMLNS, &"ack")?;
         serializer.write_attr("msgID", EPP_XMLNS, &self.message_id)?;
         serializer.end_empty()

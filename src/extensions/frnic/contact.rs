@@ -1,10 +1,12 @@
 //! Types for EPP FRNIC contact requests
-use instant_xml::{Id, ToXml};
+
 use std::borrow::Cow;
 
-use crate::request::{Extension, Transaction};
+use instant_xml::ser::Context;
+use instant_xml::{Id, ToXml};
 
 use super::{Create, Ext, XMLNS};
+use crate::request::{Extension, Transaction};
 
 impl<'a> Transaction<Ext<Create<ContactCreate<'a>>>> for crate::contact::create::ContactCreate<'a> {}
 
@@ -87,20 +89,18 @@ impl ToXml for ContactCreate<'_> {
         _: Option<Id<'_>>,
         serializer: &mut instant_xml::Serializer<'_, W>,
     ) -> Result<(), instant_xml::Error> {
-        let contact_nc_name = "contact";
-        let prefix = serializer.write_start(contact_nc_name, XMLNS)?;
+        let contact = serializer.write_start("contact", XMLNS, None::<Context<0>>)?;
         serializer.end_start()?;
         match self {
             Self::NaturalPerson { first_name } => {
-                let first_name_nc_name = "firstName";
-                let prefix = serializer.write_start(first_name_nc_name, XMLNS)?;
+                let element = serializer.write_start("firstName", XMLNS, None::<Context<0>>)?;
                 serializer.end_start()?;
                 first_name.serialize(None, serializer)?;
-                serializer.write_close(prefix, first_name_nc_name)?;
+                serializer.write_close(element)?;
             }
             Self::LegalEntity(infos) => infos.serialize(None, serializer)?,
         }
-        serializer.write_close(prefix, contact_nc_name)?;
+        serializer.write_close(contact)?;
         Ok(())
     }
 }
@@ -130,19 +130,18 @@ impl ToXml for LegalStatus<'_> {
         _field: Option<Id<'_>>,
         serializer: &mut instant_xml::Serializer<W>,
     ) -> Result<(), instant_xml::Error> {
-        let ncname = "legalStatus";
         let (s, data) = match self {
             LegalStatus::Company => ("company", None),
             LegalStatus::Association => ("association", None),
             LegalStatus::Other(text) => ("other", Some(&text.as_ref()[2..])),
         };
-        let prefix = serializer.write_start(ncname, XMLNS)?;
-        debug_assert_eq!(prefix, None);
+
+        let status = serializer.write_start("legalStatus", XMLNS, None::<Context<0>>)?;
         serializer.write_attr("s", XMLNS, s)?;
         if let Some(text) = data {
             serializer.end_start()?;
             text.serialize(None, serializer)?;
-            serializer.write_close(prefix, ncname)?;
+            serializer.write_close(status)?;
         } else {
             serializer.end_empty()?;
         }
