@@ -7,6 +7,7 @@ use std::fmt;
 use std::net::IpAddr;
 use std::str::FromStr;
 
+use instant_xml::ser::Context;
 use instant_xml::OptionAccumulator;
 use instant_xml::{Accumulate, Deserializer, FromXml, Serializer, ToXml};
 
@@ -176,18 +177,16 @@ impl ToXml for Period {
         _: Option<instant_xml::Id<'_>>,
         serializer: &mut Serializer<W>,
     ) -> Result<(), instant_xml::Error> {
-        const ELEMENT: &str = "period";
-
         let (unit, length) = match self {
             Self::Years(length) => ('y', length.0),
             Self::Months(length) => ('m', length.0),
         };
 
-        serializer.write_start(ELEMENT, XMLNS)?;
+        let period = serializer.write_start("period", XMLNS, None::<Context<0>>)?;
         serializer.write_attr("unit", XMLNS, &unit)?;
         serializer.end_start()?;
         serializer.write_str(&length)?;
-        serializer.write_close(None, ELEMENT)
+        serializer.write_close(period)
     }
 }
 
@@ -272,7 +271,7 @@ impl ToXml for Status {
         _: Option<instant_xml::Id<'_>>,
         serializer: &mut Serializer<W>,
     ) -> Result<(), instant_xml::Error> {
-        serializer.write_start("status", XMLNS)?;
+        serializer.write_start("status", XMLNS, None::<Context<0>>)?;
         serializer.write_attr("s", XMLNS, &self.as_str())?;
         serializer.end_empty()
     }

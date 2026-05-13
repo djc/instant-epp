@@ -6,6 +6,7 @@ use std::borrow::Cow;
 use std::fmt;
 use std::net::IpAddr;
 
+use instant_xml::ser::Context;
 use instant_xml::{Deserializer, FromXml, Serializer, ToXml};
 
 pub mod check;
@@ -64,7 +65,7 @@ impl ToXml for Status {
         _: Option<instant_xml::Id<'_>>,
         serializer: &mut Serializer<W>,
     ) -> Result<(), instant_xml::Error> {
-        serializer.write_start("status", XMLNS)?;
+        serializer.write_start("status", XMLNS, None::<Context<0>>)?;
         serializer.write_attr("s", XMLNS, &self.as_str())?;
         serializer.end_empty()
     }
