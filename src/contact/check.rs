@@ -60,6 +60,21 @@ pub struct CheckedContact {
     pub reason: Option<Reason>,
 }
 
+impl CheckedContact {
+    /// Returns a tuple of the availability and reason (if any) for the contact id
+    pub fn available(&self) -> (bool, Option<&str>) {
+        (
+            self.id.available,
+            self.reason.as_ref().map(|r| r.value.as_str()),
+        )
+    }
+
+    /// Returns the contact id value
+    pub fn id(&self) -> &str {
+        &self.id.value
+    }
+}
+
 #[derive(Debug, FromXml)]
 #[xml(rename = "reason", ns(XMLNS))]
 pub struct Reason {
