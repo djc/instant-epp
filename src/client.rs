@@ -1,5 +1,7 @@
+use std::marker::PhantomData;
 use std::time::Duration;
 
+use instant_xml::ToXml;
 #[cfg(feature = "__rustls")]
 use tokio_rustls::rustls::pki_types::{CertificateDer, PrivateKeyDer};
 use tracing::{debug, error};
@@ -9,6 +11,7 @@ pub use crate::connection::Connector;
 use crate::connection::EppConnection;
 use crate::error::Error;
 use crate::hello::{Greeting, Hello};
+use crate::profile::{Profile, ProfiledCommand, RequestExts};
 use crate::request::{Command, CommandWrapper, Extension, Transaction};
 use crate::response::{Response, ResponseStatus};
 use crate::xml;
@@ -64,12 +67,17 @@ use crate::xml;
 /// Domain: eppdev.com, Available: 1
 /// Domain: eppdev.net, Available: 1
 /// ```
-pub struct EppClient<C: Connector> {
+pub struct EppClient<C: Connector, P = NoProfile> {
     connection: EppConnection<C>,
+    profile: PhantomData<fn() -> P>,
 }
 
+/// Marker for an [`EppClient`] that has no registry [`Profile`] attached.
+#[derive(Debug)]
+pub struct NoProfile;
+
 #[cfg(feature = "__rustls")]
-impl EppClient<RustlsConnector> {
+impl EppClient<RustlsConnector, NoProfile> {
     /// Connect to the specified `addr` and `hostname` over TLS
     ///
     /// The `registry` is used as a name in internal logging; `host` provides the host name
@@ -97,12 +105,32 @@ impl EppClient<RustlsConnector> {
     }
 }
 
-impl<C: Connector> EppClient<C> {
+impl<C: Connector> EppClient<C, NoProfile> {
     /// Create an `EppClient` from an already established connection
     pub async fn new(connector: C, registry: String, timeout: Duration) -> Result<Self, Error> {
         Ok(Self {
             connection: EppConnection::new(connector, registry, timeout).await?,
+            profile: PhantomData,
         })
+    }
+}
+
+impl<C: Connector, P> EppClient<C, P> {
+    /// Reinterpret this client as targeting the registry profile `P2`.
+    ///
+    /// Prototype: a complete implementation would validate the greeting's
+    /// `<svcExtension>` URIs against the profile's requirements before retyping.
+    ///
+    /// I am not entirely sure this is the best way. We should not be able to switch client profiles.
+    /// This should be part of the client construction and ideally we would pick advertised
+    /// extensions based on the profile and then send them in the login.
+    ///
+    /// This just helped me to quickly test the profile-driven transaction API.
+    pub fn with_profile<P2>(self) -> EppClient<C, P2> {
+        EppClient {
+            connection: self.connection,
+            profile: PhantomData,
+        }
     }
 
     /// Executes an EPP Hello call and returns the response as a `Greeting`
@@ -151,6 +179,97 @@ impl<C: Connector> EppClient<C> {
         }));
 
         Err(err)
+    }
+
+    /// Prototype of the reworked, profile-driven transaction (see [`crate::profile`]).
+    ///
+    /// The response type and the response-extension tuple are sourced from the
+    /// registry [`Profile`], not from the request extension. A `(Cmd, ReqExts)`
+    /// combination that the profile does not declare will not compile.
+    ///
+    /// Like [`transact`](Self::transact), the request argument accepts either a
+    /// bare `&Cmd` (no request extension) or a `(&Cmd, ReqExts)` tuple, so the
+    /// empty case does not need an explicit `()`:
+    ///
+    /// ```ignore
+    /// client.transact_profiled(&info, id).await?;                 // no extension
+    /// client.transact_profiled((&update, (restore,)), id).await?; // with extensions
+    /// ```
+    ///
+    /// Passing a request extension the client's [`Profile`] does not declare, is
+    /// a compile error. The `Response` type is sourced from
+    /// `<P as Profile<Cmd, ReqExts>>` and no such `Profile` impl exists:
+    ///
+    /// ```compile_fail
+    /// use instant_epp::client::{Connector, EppClient};
+    /// use instant_epp::domain::{DomainInfo, InfoData};
+    /// use instant_epp::extensions::rgp::request::{
+    ///     RgpRequestInfoResponse, RgpRestoreRequest, Update,
+    /// };
+    /// use instant_epp::profile::{Exts, Profile};
+    ///
+    /// struct ExampleRegistry;
+    /// // Only the no-extension combination is declared for `DomainInfo`.
+    /// impl Profile<DomainInfo<'_>, ()> for ExampleRegistry {
+    ///     type Response = InfoData;
+    ///     type RespExts = Exts<(Option<RgpRequestInfoResponse>,)>;
+    /// }
+    ///
+    /// async fn run<C: Connector>(client: &mut EppClient<C, ExampleRegistry>) {
+    ///     let restore = Update { data: RgpRestoreRequest::default() };
+    ///     // `(DomainInfo, (Update,))` is not declared by `ExampleRegistry`.
+    ///     let _ = client
+    ///         .transact_profiled((&DomainInfo::new("eppdev.com", None), (restore,)), "id")
+    ///         .await;
+    /// }
+    /// ```
+    pub async fn transact_profiled<'c, Cmd, ReqExts>(
+        &mut self,
+        request: impl Into<ProfiledRequest<'c, Cmd, ReqExts>>,
+        id: &str,
+    ) -> Result<
+        Response<<P as Profile<Cmd, ReqExts>>::Response, <P as Profile<Cmd, ReqExts>>::RespExts>,
+        Error,
+    >
+    where
+        P: Profile<Cmd, ReqExts>,
+        Cmd: ToXml + 'c,
+        ReqExts: RequestExts,
+    {
+        let request = request.into();
+        let document = ProfiledCommand {
+            command: request.command,
+            exts: &request.exts,
+            client_tr_id: id,
+        };
+        let xml = xml::serialize(&document)?;
+
+        debug!("{}: request: {}", self.connection.registry, &xml);
+        let response = self.connection.transact(&xml)?.await?;
+        debug!("{}: response: {}", self.connection.registry, &response);
+
+        let rsp = match xml::deserialize::<
+            Response<
+                <P as Profile<Cmd, ReqExts>>::Response,
+                <P as Profile<Cmd, ReqExts>>::RespExts,
+            >,
+        >(&response)
+        {
+            Ok(rsp) => rsp,
+            Err(e) => {
+                error!(%response, "failed to deserialize response for transaction: {e}");
+                return Err(e);
+            }
+        };
+
+        if rsp.result.code.is_success() {
+            return Ok(rsp);
+        }
+
+        Err(Error::Command(Box::new(ResponseStatus {
+            result: rsp.result,
+            tr_ids: rsp.tr_ids,
+        })))
     }
 
     /// Accepts raw EPP XML and returns the raw EPP XML response to it.
@@ -211,6 +330,28 @@ impl<C, E> Clone for RequestData<'_, '_, C, E> {
 
 // Manual impl because this does not depend on whether `C` and `E` are `Copy`
 impl<C, E> Copy for RequestData<'_, '_, C, E> {}
+
+/// The request argument accepted by [`EppClient::transact_profiled`].
+///
+/// Todo: should replace `RequestData` once the profile-driven API is fully implemented.
+/// Todo: can we also offer this for owned Cmd?
+#[derive(Debug)]
+pub struct ProfiledRequest<'c, Cmd, ReqExts> {
+    pub(crate) command: &'c Cmd,
+    pub(crate) exts: ReqExts,
+}
+
+impl<'c, Cmd> From<&'c Cmd> for ProfiledRequest<'c, Cmd, ()> {
+    fn from(command: &'c Cmd) -> Self {
+        Self { command, exts: () }
+    }
+}
+
+impl<'c, Cmd, ReqExts> From<(&'c Cmd, ReqExts)> for ProfiledRequest<'c, Cmd, ReqExts> {
+    fn from((command, exts): (&'c Cmd, ReqExts)) -> Self {
+        Self { command, exts }
+    }
+}
 
 #[cfg(feature = "__rustls")]
 pub use rustls_connector::RustlsConnector;

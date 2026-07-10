@@ -46,6 +46,7 @@ pub mod host;
 pub mod login;
 pub mod logout;
 pub mod poll;
+pub mod profile;
 pub mod request;
 pub mod response;
 pub mod xml;

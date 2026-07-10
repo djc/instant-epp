@@ -9,12 +9,26 @@ use tokio::time::timeout;
 use tokio_test::io::Builder;
 
 use instant_epp::client::{Connector, EppClient};
-use instant_epp::domain::{DomainCheck, DomainContact, DomainCreate, Period, PeriodLength};
+use instant_epp::domain::{
+    DomainCheck, DomainContact, DomainCreate, DomainInfo, InfoData, Period, PeriodLength,
+};
+use instant_epp::extensions::rgp::request::RgpRequestInfoResponse;
+use instant_epp::extensions::rgp::RgpStatus;
 use instant_epp::login::Login;
+use instant_epp::profile::{Exts, Profile};
 use instant_epp::response::ResultCode;
 use instant_epp::Error;
 
 const CLTRID: &str = "cltrid:1626454866";
+
+/// Example registry profile: a domain info command (carrying no request
+/// extension) may still return RGP `infData` that the server volunteers.
+struct ExampleRegistry;
+
+impl Profile<DomainInfo<'_>, ()> for ExampleRegistry {
+    type Response = InfoData;
+    type RespExts = Exts<(Option<RgpRequestInfoResponse>,)>;
+}
 
 struct TestWriter;
 
@@ -241,4 +255,56 @@ async fn dropped() {
 
     let rsp = client.transact(&create, CLTRID).await.unwrap();
     assert_eq!(rsp.result.code, ResultCode::CommandCompletedSuccessfully);
+}
+
+/// End-to-end roundtrip for the profile-driven path: a domain info request that
+/// sends no request extension must still surface the response-only RGP `infData`
+/// the server volunteers, typed via the registry [`Profile`].
+#[tokio::test]
+async fn transact_profiled_info_response_only_extension() {
+    let _guard = log_to_stdout();
+
+    struct FakeConnector;
+
+    #[async_trait]
+    impl Connector for FakeConnector {
+        type Connection = tokio_test::io::Mock;
+
+        async fn connect(&self, _: Duration) -> Result<Self::Connection, Error> {
+            Ok(build_stream(&[
+                "response/greeting.xml",
+                // The client sends a plain `<info>` command with no `<extension>`.
+                "request/domain/info.xml",
+                // The server volunteers an RGP `infData` extension in the response.
+                "response/extensions/domain_info_rgp.xml",
+            ])
+            .build())
+        }
+    }
+
+    let mut client = EppClient::new(FakeConnector, "test".into(), Duration::from_secs(5))
+        .await
+        .unwrap()
+        .with_profile::<ExampleRegistry>();
+
+    let rsp = client
+        .transact_profiled(&DomainInfo::new("eppdev.com", Some("2fooBAR")), CLTRID)
+        .await
+        .unwrap();
+
+    assert_eq!(rsp.result.code, ResultCode::CommandCompletedSuccessfully);
+
+    // The command `resData` deserializes as usual.
+    assert_eq!(rsp.res_data().unwrap().name, "eppdev-1.com");
+
+    // The response-only RGP extension is present, even though the request
+    // carried no extension at all. `ext::<X>()` flattens the `<extension>`
+    // presence check — no `unwrap` needed.
+    let rgp = rsp
+        .ext::<RgpRequestInfoResponse>()
+        .expect("rgp infData populated in the response");
+    assert_eq!(
+        rgp.rgp_status,
+        vec![RgpStatus::AddPeriod, RgpStatus::RenewPeriod]
+    );
 }
