@@ -15,7 +15,7 @@ __rustls = []
 
 [dependencies]
 async-trait = "0.1.52"
-celes = "2.1"
+celes = "3.0"
 chrono = { version = "0.4.23", features = ["serde"] }
 instant-xml = { version = "0.7.1", features = ["chrono"] }
 rustls-platform-verifier = { version = "0.7", optional = true }
