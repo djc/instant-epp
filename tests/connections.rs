@@ -144,6 +144,55 @@ async fn response_in_one_read_after_dropped_request() {
     assert_eq!(rsp, "<second-response/>");
 }
 
+/// The client must decode the length from the first 4 bytes of the stream when the
+/// header arrives in more than one read. A last chunk of 1 byte used to panic.
+#[tokio::test]
+async fn header_split_three_and_one() {
+    let _guard = log_to_stdout();
+
+    let greeting = xml("response/greeting.xml");
+    let header = len_bytes(&greeting);
+    let mut builder = Builder::new();
+    builder.read(&header[..3]);
+    builder.read(&header[3..]);
+    builder.read(greeting.as_bytes());
+
+    let client = connect(builder).await.unwrap();
+    assert_eq!(client.xml_greeting(), greeting);
+}
+
+/// A split header whose second read also holds the body used to give a wrong length.
+#[tokio::test]
+async fn header_split_with_body_in_second_read() {
+    let _guard = log_to_stdout();
+
+    let greeting = xml("response/greeting.xml");
+    let header = len_bytes(&greeting);
+    let mut builder = Builder::new();
+    builder.read(&header[..2]);
+    builder.read(&[&header[2..], greeting.as_bytes()].concat());
+
+    let client = connect(builder).await.unwrap();
+    assert_eq!(client.xml_greeting(), greeting);
+}
+
+/// A header that arrives one byte at a time.
+#[tokio::test]
+async fn header_split_into_single_bytes() {
+    let _guard = log_to_stdout();
+
+    let greeting = xml("response/greeting.xml");
+    let header = len_bytes(&greeting);
+    let mut builder = Builder::new();
+    for byte in header {
+        builder.read(&[byte]);
+    }
+    builder.read(greeting.as_bytes());
+
+    let client = connect(builder).await.unwrap();
+    assert_eq!(client.xml_greeting(), greeting);
+}
+
 /// A failed reconnect used to clear the in-flight request but keep the old stream, so
 /// the next request got the response of the earlier request.
 #[tokio::test]
