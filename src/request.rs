@@ -60,7 +60,7 @@ impl<D: ToXml, E: ToXml> ToXml for CommandWrapper<'_, D, E> {
 
         let cl_tr_id = serializer.write_start("clTRID", EPP_XMLNS, None::<Context<0>>)?;
         serializer.end_start()?;
-        serializer.write_str(&self.client_tr_id)?;
+        self.client_tr_id.as_str().serialize(None, serializer)?;
         serializer.write_close(cl_tr_id)?;
 
         serializer.write_close(command)?;
@@ -72,4 +72,29 @@ impl<D: ToXml, E: ToXml> ToXml for CommandWrapper<'_, D, E> {
 #[xml(rename = "extension", ns(EPP_XMLNS))]
 struct Ext<E> {
     inner: E,
+}
+
+#[cfg(test)]
+mod tests {
+    use similar_asserts::assert_eq;
+
+    use super::CommandWrapper;
+    use crate::common::NoExtension;
+    use crate::domain::DomainCheck;
+    use crate::tests::{get_xml, CLTRID};
+    use crate::xml;
+
+    #[test]
+    fn client_transaction_id_is_escaped() {
+        let object = DomainCheck {
+            domains: &["eppdev.com", "eppdev.net"],
+        };
+        let document =
+            CommandWrapper::new(&object, None::<&NoExtension>, "x</clTRID><foo/><clTRID>a&b");
+
+        let expected = get_xml("request/domain/check.xml")
+            .unwrap()
+            .replace(CLTRID, "x&lt;/clTRID&gt;&lt;foo/&gt;&lt;clTRID&gt;a&amp;b");
+        assert_eq!(expected, xml::serialize(document).unwrap());
+    }
 }
