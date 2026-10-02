@@ -90,6 +90,60 @@ async fn frame_length_below_header_size_is_rejected() {
     }
 }
 
+/// A frame that arrives in one read is complete. The client must not read again, and
+/// the result must hold only the frame's body.
+#[tokio::test]
+async fn response_in_one_read() {
+    let _guard = log_to_stdout();
+
+    let greeting = "<greeting/>";
+    let mut builder = Builder::new();
+    builder.read(&frame(greeting));
+
+    let client = connect(builder).await.unwrap();
+    assert_eq!(client.xml_greeting(), greeting);
+
+    let mut builder = Builder::new();
+    builder.read(&frame("<greeting/>"));
+    builder.write(&frame("<request/>"));
+    builder.read(&frame("<response/>"));
+
+    let mut client = connect(builder).await.unwrap();
+    let rsp = timeout(Duration::from_secs(1), client.transact_xml("<request/>"))
+        .await
+        .expect("transact hung on a frame that was already complete")
+        .unwrap();
+    assert_eq!(rsp, "<response/>");
+}
+
+/// A complete one-read frame for a dropped request must be skipped, and the queued
+/// request must then get its own response.
+#[tokio::test]
+async fn response_in_one_read_after_dropped_request() {
+    let _guard = log_to_stdout();
+
+    let mut builder = Builder::new();
+    builder.read(&frame("<greeting/>"));
+    builder.write(&frame("<first/>"));
+    builder.wait(Duration::from_millis(100));
+    builder.read(&frame("<first-response/>"));
+    builder.write(&frame("<second/>"));
+    builder.read(&frame("<second-response/>"));
+
+    let mut client = connect(builder).await.unwrap();
+
+    // Drop the first request while its response is pending.
+    timeout(Duration::from_millis(10), client.transact_xml("<first/>"))
+        .await
+        .unwrap_err();
+
+    let rsp = timeout(Duration::from_secs(1), client.transact_xml("<second/>"))
+        .await
+        .expect("transact hung on a frame that was already complete")
+        .unwrap();
+    assert_eq!(rsp, "<second-response/>");
+}
+
 /// A failed reconnect used to clear the in-flight request but keep the old stream, so
 /// the next request got the response of the earlier request.
 #[tokio::test]
