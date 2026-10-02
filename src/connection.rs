@@ -196,12 +196,24 @@ impl<C: Connector> EppConnection<C> {
                 }
 
                 debug!("{}: Expected response length: {}", self.registry, expected);
-                buf.resize(expected, 0);
-                Ok(Transition::Next(RequestState::Reading {
-                    read: new_read,
-                    buf: mem::take(buf),
-                    expected,
-                }))
+                Ok(if new_read < expected {
+                    // The first read holds only part of the frame, so read the rest in the
+                    // `Reading` state.
+                    buf.resize(expected, 0);
+                    Transition::Next(RequestState::Reading {
+                        read: new_read,
+                        buf: mem::take(buf),
+                        expected,
+                    })
+                } else if let Some(next) = self.next.take() {
+                    // Otherwise, the frame is complete. If it is the response to a request whose
+                    // future was dropped, discard it and move to the next request.
+                    Transition::Next(next)
+                } else {
+                    buf.truncate(expected);
+                    buf.drain(..4);
+                    Transition::Done(String::from_utf8(mem::take(buf))?)
+                })
             }
             RequestState::Reading {
                 read,
