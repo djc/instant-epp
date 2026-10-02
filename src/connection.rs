@@ -175,7 +175,7 @@ impl<C: Connector> EppConnection<C> {
                     }));
                 }
 
-                let expected = u32::from_be_bytes(filled[..4].try_into()?) as usize;
+                let expected = u32::from_be_bytes(buf[..4].try_into()?) as usize;
                 if expected > self.max_read_buf {
                     return Err(Error::ResponseTooLarge {
                         expected,
