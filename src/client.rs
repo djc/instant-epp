@@ -270,7 +270,7 @@ mod rustls_connector {
                 None => {
                     return Err(Error::Io(io::Error::new(
                         io::ErrorKind::InvalidInput,
-                        format!("invalid host: {}", &self.server.0),
+                        format!("invalid host: {}", self.server.0),
                     )))
                 }
             };

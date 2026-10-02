@@ -71,7 +71,7 @@ fn deserialize_host_addrs_option<'xml>(
             Err(_) => {
                 return Err(instant_xml::Error::UnexpectedValue(format!(
                     "invalid IP address '{}'",
-                    &addr.address
+                    addr.address
                 )))
             }
         }
