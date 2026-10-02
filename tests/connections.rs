@@ -58,6 +58,38 @@ async fn frame_length_above_configured_limit_is_rejected() {
     }
 }
 
+/// A length below the bytes in the first read used to shrink the buffer below the read
+/// offset, and the next read panicked.
+#[tokio::test]
+async fn frame_length_below_bytes_already_read_is_rejected() {
+    let _guard = log_to_stdout();
+
+    // The header declares 6 bytes, but the first read already holds 8.
+    let mut builder = Builder::new();
+    builder.read(&[0, 0, 0, 6, b'a', b'b', b'c', b'd']);
+
+    match connect(builder).await {
+        Err(Error::Io(err)) => assert_eq!(err.kind(), io::ErrorKind::InvalidData),
+        Err(err) => panic!("expected an InvalidData error, got {err:?}"),
+        Ok(_) => panic!("expected an InvalidData error, got a client"),
+    }
+}
+
+/// A length below the 4-byte header is invalid.
+#[tokio::test]
+async fn frame_length_below_header_size_is_rejected() {
+    let _guard = log_to_stdout();
+
+    let mut builder = Builder::new();
+    builder.read(&[0, 0, 0, 0]);
+
+    match connect(builder).await {
+        Err(Error::Io(err)) => assert_eq!(err.kind(), io::ErrorKind::InvalidData),
+        Err(err) => panic!("expected an InvalidData error, got {err:?}"),
+        Ok(_) => panic!("expected an InvalidData error, got a client"),
+    }
+}
+
 struct TestWriter;
 
 impl Write for TestWriter {

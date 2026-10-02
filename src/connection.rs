@@ -182,6 +182,19 @@ impl<C: Connector> EppConnection<C> {
                         max: self.max_read_buf,
                     });
                 }
+                // We already read new_read bytes. If the length says we should have
+                // read less, this is an error.
+                if expected < new_read {
+                    return Err(io::Error::new(
+                        io::ErrorKind::InvalidData,
+                        format!(
+                            "{}: Invalid response length: {expected} is less than the {new_read} bytes already read",
+                            self.registry
+                        ),
+                    )
+                    .into());
+                }
+
                 debug!("{}: Expected response length: {}", self.registry, expected);
                 buf.resize(expected, 0);
                 Ok(Transition::Next(RequestState::Reading {
