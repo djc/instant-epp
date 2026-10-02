@@ -90,6 +90,48 @@ async fn frame_length_below_header_size_is_rejected() {
     }
 }
 
+/// A failed reconnect used to clear the in-flight request but keep the old stream, so
+/// the next request got the response of the earlier request.
+#[tokio::test]
+async fn failed_reconnect_keeps_in_flight_request() {
+    let _guard = log_to_stdout();
+
+    // Each frame arrives as a header read and a body read.
+    let mut builder = Builder::new();
+    builder.read(&len_bytes("<greeting/>")).read(b"<greeting/>");
+    builder.write(&frame("<first/>"));
+    builder.wait(Duration::from_millis(100));
+    builder
+        .read(&len_bytes("<first-response/>"))
+        .read(b"<first-response/>");
+    builder.write(&frame("<second/>"));
+    builder
+        .read(&len_bytes("<second-response/>"))
+        .read(b"<second-response/>");
+
+    // The second connect fails.
+    let connector = MockConnector::new(vec![Some(builder), None]);
+    let mut client = EppClient::new(connector, "test".into(), Duration::from_secs(5))
+        .await
+        .unwrap();
+
+    // Drop the first request while its response is pending.
+    timeout(Duration::from_millis(10), client.transact_xml("<first/>"))
+        .await
+        .unwrap_err();
+
+    assert!(client.reconnect().await.is_err());
+
+    // Continuing here is not desired but could happen in complex code.
+    // We should be correct instead of relying on the user to avoid this situation.
+    // The old stream still holds the first response. The second request must skip it.
+    let rsp = timeout(Duration::from_secs(1), client.transact_xml("<second/>"))
+        .await
+        .expect("transact hung")
+        .unwrap();
+    assert_eq!(rsp, "<second-response/>");
+}
+
 struct TestWriter;
 
 impl Write for TestWriter {
@@ -189,6 +231,11 @@ async fn connect(builder: Builder) -> Result<EppClient<MockConnector>, Error> {
     )
     .await
     .expect("connect hung while reading the greeting")
+}
+
+/// A complete RFC 5734 frame: the 4-byte header followed by `body`
+fn frame(body: &str) -> Vec<u8> {
+    [&len_bytes(body)[..], body.as_bytes()].concat()
 }
 
 fn login() -> Login<'static> {

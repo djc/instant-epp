@@ -68,9 +68,9 @@ impl<C: Connector> EppConnection<C> {
 
     pub(crate) async fn reconnect(&mut self) -> Result<(), Error> {
         debug!("{}: reconnecting", self.registry);
+        self.stream = self.connector.connect(self.timeout).await?;
         let _ = self.current.take();
         let _ = self.next.take();
-        self.stream = self.connector.connect(self.timeout).await?;
         self.read_greeting().await?;
         Ok(())
     }
