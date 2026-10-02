@@ -20,6 +20,7 @@ pub(crate) struct EppConnection<C: Connector> {
     connector: C,
     stream: C::Connection,
     pub(crate) greeting: String,
+    pub(crate) max_read_buf: usize,
     timeout: Duration,
     // A request that is currently in flight
     //
@@ -45,6 +46,7 @@ impl<C: Connector> EppConnection<C> {
             connector,
             greeting: String::new(),
             timeout,
+            max_read_buf: 1024 * 1024, // 1MiB
             current: None,
             next: None,
         };
@@ -174,6 +176,12 @@ impl<C: Connector> EppConnection<C> {
                 }
 
                 let expected = u32::from_be_bytes(filled[..4].try_into()?) as usize;
+                if expected > self.max_read_buf {
+                    return Err(Error::ResponseTooLarge {
+                        expected,
+                        max: self.max_read_buf,
+                    });
+                }
                 debug!("{}: Expected response length: {}", self.registry, expected);
                 buf.resize(expected, 0);
                 Ok(Transition::Next(RequestState::Reading {

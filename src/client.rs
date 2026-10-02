@@ -105,6 +105,11 @@ impl<C: Connector> EppClient<C> {
         })
     }
 
+    /// Set the maximum read buffer size for the underlying connection
+    pub fn set_max_read_buf(&mut self, max_read_buf: usize) {
+        self.connection.max_read_buf = max_read_buf;
+    }
+
     /// Executes an EPP Hello call and returns the response as a `Greeting`
     pub async fn hello(&mut self) -> Result<Greeting, Error> {
         let xml = xml::serialize(Hello)?;
