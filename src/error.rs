@@ -18,6 +18,7 @@ pub enum Error {
     Timeout,
     Xml(Box<dyn StdError + Send + Sync>),
     Other(Box<dyn StdError + Send + Sync>),
+    ResponseTooLarge { expected: usize, max: usize },
 }
 
 impl StdError for Error {}
@@ -32,6 +33,9 @@ impl Display for Error {
             Self::Timeout => write!(f, "timeout"),
             Self::Xml(e) => write!(f, "(de)serialization error: {e}"),
             Self::Other(e) => write!(f, "error: {e}"),
+            Self::ResponseTooLarge { expected, max } => {
+                write!(f, "response too large: expected {expected}, max {max}")
+            }
         }
     }
 }
