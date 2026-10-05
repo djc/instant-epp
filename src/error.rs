@@ -12,6 +12,7 @@ use crate::response::ResponseStatus;
 
 /// Error enum holding the possible error types
 #[derive(Debug)]
+#[non_exhaustive]
 pub enum Error {
     Command(Box<ResponseStatus>),
     Io(std::io::Error),
